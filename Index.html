@@ -1,0 +1,2641 @@
+<!DOCTYPE html>
+<html lang="ru">
+<head>
+<meta charset="UTF-8">
+<meta name="viewport" content="width=device-width, initial-scale=1.0, maximum-scale=1.0, user-scalable=no">
+<title>Case Simulator - Hardcore Economy VIP</title>
+<style>
+  :root {
+    --bg-dark: #020408;
+    --panel-bg: linear-gradient(145deg, rgba(16, 22, 35, 0.9) 0%, rgba(8, 12, 20, 0.96) 100%);
+    --panel-border: rgba(255, 215, 0, 0.18);
+    --gold-primary: #ffd700;
+    --gold-light: #fff399;
+    --gold-dark: #b8860b;
+    --neon-blue: #00f2fe;
+    --neon-red: #ff2a6d;
+    --neon-green: #05ffa1;
+    --text-main: #f8fafc;
+    --text-dim: #8899ac;
+    
+    --tier-rare: #00b0ff;
+    --tier-epic: #d500f9;
+    --tier-legendary: #ffab00;
+    --tier-mythic: #ff1744;
+  }
+
+  * {
+    box-sizing: border-box;
+    margin: 0;
+    padding: 0;
+    user-select: none;
+    -webkit-tap-highlight-color: transparent;
+    font-family: -apple-system, BlinkMacSystemFont, "Segoe UI", Roboto, Helvetica, Arial, sans-serif;
+  }
+
+  body {
+    background-color: #000103;
+    display: flex;
+    justify-content: center;
+    align-items: center;
+    min-height: 100vh;
+    color: var(--text-main);
+    overflow: hidden;
+  }
+
+  .device-frame {
+    width: 100%;
+    max-width: 420px;
+    height: 100vh;
+    max-height: 890px;
+    background: radial-gradient(circle at 50% 0%, #0d1526 0%, #020408 85%);
+    display: flex;
+    flex-direction: column;
+    position: relative;
+    overflow: hidden;
+    box-shadow: 0 0 90px rgba(0,0,0,0.95), 0 0 35px rgba(255, 215, 0, 0.08);
+    border-radius: 34px;
+    border: 2px solid rgba(255, 215, 0, 0.25);
+  }
+
+  .header-bar {
+    background: rgba(6, 9, 15, 0.95);
+    backdrop-filter: blur(18px);
+    padding: 12px 14px;
+    display: flex;
+    flex-direction: column;
+    gap: 8px;
+    border-bottom: 1px solid var(--panel-border);
+    z-index: 10;
+  }
+
+  .bank-top-row {
+    display: flex;
+    align-items: center;
+    justify-content: space-between;
+  }
+
+  .profile-block { 
+    display: flex; 
+    align-items: center; 
+    gap: 10px; 
+    cursor: pointer;
+    padding: 2px 6px 2px 2px;
+    border-radius: 10px;
+    transition: background 0.2s;
+  }
+  .profile-block:hover { background: rgba(255, 215, 0, 0.08); }
+  .profile-block:active { transform: scale(0.97); }
+  
+  .mc-card {
+    width: 52px;
+    height: 34px;
+    background: linear-gradient(135deg, #1c2433 0%, #0a0e17 100%);
+    border-radius: 6px;
+    border: 1px solid rgba(255, 215, 0, 0.35);
+    display: flex;
+    flex-direction: column;
+    justify-content: space-between;
+    padding: 4px 6px;
+    position: relative;
+    box-shadow: 0 3px 10px rgba(0,0,0,0.6), inset 0 1px 2px rgba(255,255,255,0.2);
+    overflow: hidden;
+  }
+  .mc-chip {
+    width: 10px;
+    height: 7px;
+    background: linear-gradient(135deg, #ffd700, #b8860b);
+    border-radius: 1.5px;
+  }
+  .mc-circles {
+    display: flex;
+    align-items: center;
+    justify-content: flex-end;
+    margin-top: -4px;
+  }
+  .mc-circle {
+    width: 10px;
+    height: 10px;
+    border-radius: 50%;
+  }
+  .mc-red { background: rgba(239, 68, 68, 0.85); z-index: 1; }
+  .mc-yellow { background: rgba(245, 158, 11, 0.85); margin-left: -5px; z-index: 2; }
+
+  .player-info { display: flex; flex-direction: column; gap: 2px; }
+  .player-name { 
+    font-size: 11px; 
+    color: var(--gold-light); 
+    font-weight: 800; 
+    letter-spacing: 0.8px; 
+    text-shadow: 0 0 8px rgba(255,215,0,0.3); 
+    font-family: monospace; 
+    text-transform: uppercase;
+    display: flex;
+    align-items: center;
+    gap: 5px;
+  }
+  .edit-name-icon {
+    font-size: 10px;
+    opacity: 0.7;
+  }
+  .player-account-id { font-size: 8px; color: var(--text-dim); font-family: monospace; letter-spacing: 0.8px; }
+
+  .stats-block { display: flex; flex-direction: column; align-items: flex-end; gap: 2px; }
+  .currency-pill {
+    background: linear-gradient(135deg, rgba(22, 30, 46, 0.95), rgba(8, 12, 18, 0.98));
+    padding: 6px 12px;
+    border-radius: 16px;
+    display: flex;
+    align-items: center;
+    gap: 5px;
+    font-size: 13px;
+    font-weight: 900;
+    border: 1px solid rgba(255, 215, 0, 0.4);
+    box-shadow: inset 0 1px 4px rgba(255,255,255,0.15), 0 4px 12px rgba(0,0,0,0.6);
+  }
+  .currency-pill.money { color: var(--gold-primary); text-shadow: 0 0 14px rgba(255, 215, 0, 0.6); }
+
+  .name-input {
+    width: 100%;
+    background: rgba(6, 10, 18, 0.95);
+    border: 1.5px solid var(--gold-primary);
+    border-radius: 12px;
+    padding: 12px 14px;
+    color: var(--gold-light);
+    font-size: 14px;
+    font-weight: 800;
+    text-align: center;
+    text-transform: uppercase;
+    font-family: monospace;
+    letter-spacing: 1px;
+    outline: none;
+    user-select: text;
+    -webkit-user-select: text;
+    box-shadow: inset 0 2px 8px rgba(0,0,0,0.6);
+  }
+  .name-input::placeholder {
+    color: rgba(136, 153, 172, 0.5);
+  }
+
+  .bank-bottom-row {
+    display: flex;
+    justify-content: center;
+    align-items: center;
+    width: 100%;
+    padding-top: 2px;
+    border-top: 1px solid rgba(255, 215, 0, 0.08);
+  }
+  .xp-bar-container {
+    width: 220px;
+    height: 10px;
+    background: rgba(0,0,0,0.7);
+    border-radius: 6px;
+    position: relative;
+    overflow: hidden;
+    border: 1px solid rgba(255, 215, 0, 0.25);
+  }
+  .xp-bar-fill { height: 100%; width: 0%; background: linear-gradient(90deg, #ff8c00, var(--gold-primary)); transition: width 0.4s ease; box-shadow: 0 0 10px var(--gold-primary); }
+  .xp-text {
+    position: absolute;
+    inset: 0;
+    font-size: 7.5px;
+    display: flex;
+    align-items: center;
+    justify-content: center;
+    font-weight: 900;
+    color: #fff;
+    text-shadow: 0 1px 2px rgba(0,0,0,0.9);
+  }
+
+  .viewport { flex: 1; overflow-y: auto; display: none; padding-bottom: 70px; }
+  .viewport.active-view { display: flex; flex-direction: column; }
+  .viewport::-webkit-scrollbar { display: none; }
+
+  .case-group { margin-bottom: 16px; }
+  .group-title {
+    background: linear-gradient(90deg, transparent, rgba(255, 215, 0, 0.1), transparent);
+    color: var(--gold-light);
+    text-align: center;
+    font-size: 10.5px;
+    text-transform: uppercase;
+    font-weight: 900;
+    letter-spacing: 2.5px;
+    padding: 8px 0;
+    margin-bottom: 10px;
+    border-top: 1px solid rgba(255, 215, 0, 0.2);
+    border-bottom: 1px solid rgba(255, 215, 0, 0.2);
+    text-shadow: 0 0 12px rgba(255, 215, 0, 0.5);
+  }
+
+  .group-grid { display: grid; grid-template-columns: repeat(4, 1fr); gap: 8px; padding: 0 10px; }
+  .group-grid.five-cols { grid-template-columns: repeat(5, 1fr); }
+
+  .case-card {
+    background: var(--panel-bg);
+    border-radius: 16px;
+    display: flex;
+    flex-direction: column;
+    align-items: center;
+    border: 1px solid var(--panel-border);
+    cursor: pointer;
+    overflow: hidden;
+    position: relative;
+    backdrop-filter: blur(12px);
+    box-shadow: 0 8px 22px rgba(0,0,0,0.55), inset 0 1px 2px rgba(255,255,255,0.12);
+    transition: transform 0.2s cubic-bezier(0.34, 1.56, 0.64, 1), border-color 0.2s, box-shadow 0.2s;
+  }
+  .case-card:hover { border-color: var(--gold-primary); box-shadow: 0 12px 28px rgba(0,0,0,0.7), 0 0 18px rgba(255, 215, 0, 0.3); }
+  .case-card:active { transform: scale(0.92); }
+
+  .case-card.bmw-featured {
+    border: 1.5px solid #38bdf8;
+    box-shadow: 0 8px 22px rgba(0, 114, 255, 0.4), 0 0 16px rgba(56, 189, 248, 0.45);
+  }
+  .case-card.bmw-featured:hover {
+    border-color: #ffffff;
+    box-shadow: 0 12px 28px rgba(0, 114, 255, 0.7), 0 0 24px rgba(56, 189, 248, 0.75);
+  }
+  .badge-bmw {
+    background: linear-gradient(135deg, #0072ff 0%, #00c6ff 50%, #e11d48 100%);
+    color: #ffffff;
+    border-bottom: 1px solid rgba(255, 255, 255, 0.4);
+    text-shadow: 0 1px 4px rgba(0, 0, 0, 0.8);
+  }
+
+  .case-badge {
+    width: 100%;
+    font-size: 7.5px;
+    font-weight: 900;
+    text-align: center;
+    padding: 5px 2px;
+    text-transform: uppercase;
+    letter-spacing: 1.2px;
+    box-shadow: 0 2px 6px rgba(0,0,0,0.4);
+  }
+  .badge-starter { background: linear-gradient(135deg, #475569, #1e293b); color: #e2e8f0; border-bottom: 1px solid rgba(255,255,255,0.15); }
+  .badge-mid { background: linear-gradient(135deg, #8b5cf6, #581c87); color: #f3e8ff; border-bottom: 1px solid rgba(168,85,247,0.4); }
+  .badge-pro { background: linear-gradient(135deg, #06b6d4, #164e63); color: #cffafe; border-bottom: 1px solid rgba(6,182,212,0.4); }
+  .badge-elite { background: linear-gradient(135deg, #ef4444, #7f1d1d); color: #fee2e2; border-bottom: 1px solid rgba(239,68,68,0.4); }
+
+  .case-img-box {
+    padding: 10px 4px;
+    height: 64px;
+    display: flex;
+    align-items: center;
+    justify-content: center;
+    position: relative;
+  }
+  .case-img-box::after {
+    content: '';
+    position: absolute;
+    width: 40px;
+    height: 40px;
+    background: radial-gradient(circle, rgba(255, 215, 0, 0.15) 0%, transparent 70%);
+    border-radius: 50%;
+  }
+  .case-img-box img {
+    max-width: 100%;
+    max-height: 100%;
+    object-fit: contain;
+    filter: drop-shadow(0 6px 10px rgba(0,0,0,0.85));
+    transition: transform 0.25s cubic-bezier(0.34, 1.56, 0.64, 1);
+    position: relative;
+    z-index: 2;
+  }
+  .case-card:hover .case-img-box img { transform: scale(1.18) translateY(-3px); }
+
+  .case-cost {
+    width: 100%;
+    background: rgba(2, 4, 7, 0.92);
+    font-size: 8px;
+    text-align: center;
+    padding: 5px 0;
+    color: var(--gold-light);
+    font-weight: 900;
+    border-top: 1px solid rgba(255, 215, 0, 0.12);
+    text-shadow: 0 0 8px rgba(255, 215, 0, 0.4);
+  }
+
+  .case-view-screen {
+    position: absolute;
+    inset: 0;
+    background: radial-gradient(circle at 50% 15%, #162035 0%, #020408 90%);
+    z-index: 20;
+    display: none;
+    flex-direction: column;
+    overflow-y: auto;
+  }
+  .top-action-bar {
+    display: flex;
+    align-items: center;
+    justify-content: space-between;
+    padding: 10px 16px;
+    background: rgba(6, 9, 15, 0.88);
+    backdrop-filter: blur(14px);
+    border-bottom: 1px solid var(--panel-border);
+    gap: 8px;
+  }
+  .back-btn {
+    background: linear-gradient(135deg, rgba(255,255,255,0.1), rgba(255,255,255,0.02));
+    border: 1px solid rgba(255, 215, 0, 0.3);
+    color: var(--gold-light);
+    width: 36px;
+    height: 36px;
+    border-radius: 50%;
+    font-size: 15px;
+    cursor: pointer;
+    display: flex;
+    align-items: center;
+    justify-content: center;
+    box-shadow: 0 4px 12px rgba(0,0,0,0.5);
+    flex-shrink: 0;
+  }
+  .back-btn:active { transform: scale(0.9); }
+  .case-header-price { font-size: 13px; font-weight: 900; color: var(--gold-primary); text-shadow: 0 0 12px rgba(255,215,0,0.5); text-align: center; flex: 1; }
+
+  .info-btn {
+    background: rgba(255, 215, 0, 0.1);
+    border: 1px solid var(--gold-primary);
+    color: var(--gold-primary);
+    width: 34px;
+    height: 34px;
+    border-radius: 50%;
+    font-size: 15px;
+    font-weight: 900;
+    cursor: pointer;
+    display: flex;
+    align-items: center;
+    justify-content: center;
+    box-shadow: 0 0 15px rgba(255, 215, 0, 0.4);
+    flex-shrink: 0;
+  }
+  .info-btn:active { transform: scale(0.9); }
+
+  .chances-modal {
+    position: absolute;
+    inset: 0;
+    background: rgba(1, 3, 6, 0.94);
+    backdrop-filter: blur(12px);
+    z-index: 60;
+    display: none;
+    flex-direction: column;
+    justify-content: center;
+    align-items: center;
+    padding: 20px;
+  }
+  .chances-box {
+    background: linear-gradient(145deg, rgba(20, 28, 44, 0.98), rgba(6, 10, 16, 0.98));
+    border: 2px solid var(--gold-primary);
+    border-radius: 26px;
+    padding: 24px;
+    width: 100%;
+    max-width: 335px;
+    display: flex;
+    flex-direction: column;
+    gap: 12px;
+    box-shadow: 0 30px 60px rgba(0,0,0,0.95), 0 0 40px rgba(255, 215, 0, 0.35);
+  }
+  .chances-title { font-size: 15px; font-weight: 900; color: var(--gold-light); text-align: center; text-transform: uppercase; letter-spacing: 1.2px; }
+  .chance-row {
+    display: flex;
+    justify-content: space-between;
+    align-items: center;
+    font-size: 12.5px;
+    font-weight: 800;
+    padding: 9px 14px;
+    background: rgba(255,255,255,0.035);
+    border-radius: 12px;
+    border-left: 5px solid var(--tier-color);
+    box-shadow: 0 4px 12px rgba(0,0,0,0.35);
+  }
+  .chance-row span:last-child { color: var(--gold-primary); }
+
+  .roulette-container {
+    position: relative;
+    width: 100%;
+    height: 140px;
+    background: linear-gradient(180deg, #03060c 0%, #0a1120 50%, #03060c 100%);
+    border-top: 2px solid rgba(255, 215, 0, 0.35);
+    border-bottom: 2px solid rgba(255, 215, 0, 0.35);
+    box-shadow: inset 0 0 40px rgba(0,0,0,0.95), 0 0 25px rgba(255, 215, 0, 0.2);
+    overflow: hidden;
+    margin: 12px 0;
+  }
+
+  .roulette-arrows {
+    position: absolute;
+    inset: 0;
+    pointer-events: none;
+    z-index: 5;
+    display: flex;
+    flex-direction: column;
+    justify-content: space-between;
+    align-items: center;
+    padding: 2px 0;
+  }
+  .arrow-top { font-size: 13px; color: var(--gold-primary); text-shadow: 0 0 12px var(--gold-primary); }
+  .arrow-bottom { font-size: 13px; color: var(--gold-primary); text-shadow: 0 0 12px var(--gold-primary); }
+
+  .roulette-track {
+    display: flex;
+    height: 100%;
+    position: absolute;
+    left: 0;
+    top: 0;
+    will-change: transform;
+  }
+
+  .roulette-item {
+    width: 110px;
+    height: 100%;
+    flex-shrink: 0;
+    display: flex;
+    flex-direction: column;
+    align-items: center;
+    justify-content: center;
+    border-right: 1px solid rgba(255,255,255,0.07);
+    background: rgba(16, 23, 36, 0.7);
+    padding: 6px;
+    position: relative;
+  }
+  .roulette-item::after {
+    content: '';
+    position: absolute;
+    bottom: 0;
+    left: 0;
+    width: 100%;
+    height: 4.5px;
+    background: var(--tier-color, var(--tier-rare));
+    box-shadow: 0 0 14px var(--tier-color, var(--tier-rare));
+  }
+  .roulette-item img {
+    width: 65px;
+    height: 65px;
+    object-fit: contain;
+    filter: drop-shadow(0 6px 10px rgba(0,0,0,0.85));
+  }
+  .roulette-item-title {
+    font-size: 8px;
+    color: #cbd5e1;
+    text-align: center;
+    margin-top: 6px;
+    white-space: nowrap;
+    overflow: hidden;
+    text-overflow: ellipsis;
+    max-width: 100px;
+    font-weight: 800;
+  }
+
+  .multi-selectors { display: flex; justify-content: center; gap: 8px; margin: 8px 0 12px 0; }
+  .multi-btn {
+    background: rgba(16, 22, 36, 0.85);
+    border: 1px solid var(--panel-border);
+    color: var(--text-dim);
+    font-size: 12.5px;
+    font-weight: 900;
+    padding: 7px 18px;
+    border-radius: 12px;
+    cursor: pointer;
+    transition: 0.2s;
+    box-shadow: 0 4px 12px rgba(0,0,0,0.45);
+  }
+  .multi-btn.active {
+    border-color: var(--gold-primary);
+    color: var(--gold-primary);
+    background: rgba(255, 215, 0, 0.15);
+    box-shadow: 0 0 18px rgba(255, 215, 0, 0.4);
+    text-shadow: 0 0 10px rgba(255,215,0,0.6);
+  }
+
+  .open-btn {
+    display: block;
+    width: 84%;
+    margin: 10px auto;
+    background: linear-gradient(135deg, #ffd700 0%, #ff7700 100%);
+    border: 2px solid #fff;
+    color: #020408;
+    font-size: 16px;
+    font-weight: 900;
+    text-transform: uppercase;
+    letter-spacing: 2.2px;
+    padding: 15px;
+    border-radius: 18px;
+    cursor: pointer;
+    box-shadow: 0 12px 30px rgba(255, 119, 0, 0.55), inset 0 2px 4px rgba(255,255,255,0.9);
+    transition: transform 0.15s cubic-bezier(0.34, 1.56, 0.64, 1), filter 0.2s;
+  }
+  .open-btn:active { transform: scale(0.94); filter: brightness(0.9); }
+  .open-btn:disabled { opacity: 0.4; cursor: not-allowed; filter: grayscale(1); box-shadow: none; }
+
+  .case-contents-grid {
+    display: grid;
+    grid-template-columns: repeat(4, 1fr);
+    gap: 8px;
+    padding: 12px 10px;
+  }
+  .drop-card {
+    background: var(--panel-bg);
+    border-radius: 14px;
+    border: 1px solid var(--panel-border);
+    display: flex;
+    flex-direction: column;
+    align-items: center;
+    padding: 9px 4px;
+    position: relative;
+    overflow: hidden;
+    cursor: pointer;
+    box-shadow: 0 6px 18px rgba(0,0,0,0.55);
+    transition: transform 0.2s, border-color 0.2s;
+  }
+  .drop-card:hover { border-color: var(--gold-primary); transform: translateY(-2px); }
+  .drop-card::after {
+    content: '';
+    position: absolute;
+    bottom: 0;
+    left: 0;
+    width: 100%;
+    height: 3.5px;
+    background: var(--tier-color, var(--tier-rare));
+    box-shadow: 0 0 10px var(--tier-color, var(--tier-rare));
+  }
+  .drop-name {
+    font-size: 8px;
+    font-weight: 800;
+    color: #e2e8f0;
+    white-space: nowrap;
+    overflow: hidden;
+    text-overflow: ellipsis;
+    width: 100%;
+    text-align: center;
+  }
+  .drop-img-box {
+    width: 100%;
+    height: 58px;
+    display: flex;
+    align-items: center;
+    justify-content: center;
+    margin: 4px 0;
+    position: relative;
+  }
+  .drop-img-box::before {
+    content: '';
+    position: absolute;
+    width: 48px;
+    height: 48px;
+    background: radial-gradient(circle, var(--tier-glow, rgba(255, 215, 0, 0.22)) 0%, transparent 70%);
+    border-radius: 50%;
+  }
+  .drop-img-box img {
+    max-width: 100%;
+    max-height: 100%;
+    object-fit: contain;
+    filter: drop-shadow(0 5px 8px rgba(0,0,0,0.85));
+    position: relative;
+    z-index: 2;
+  }
+  .drop-cost { font-size: 9px; font-weight: 900; color: var(--gold-primary); text-shadow: 0 0 8px rgba(255,215,0,0.4); }
+
+  .inspect-modal {
+    position: absolute;
+    inset: 0;
+    background: rgba(1, 3, 6, 0.94);
+    backdrop-filter: blur(16px);
+    z-index: 150;
+    display: none;
+    flex-direction: column;
+    justify-content: center;
+    align-items: center;
+    padding: 20px;
+  }
+  .inspect-box {
+    background: linear-gradient(145deg, rgba(22, 32, 52, 0.98), rgba(6, 10, 16, 0.98));
+    border: 2px solid var(--inspect-color, var(--gold-primary));
+    border-radius: 30px;
+    padding: 32px 20px;
+    width: 100%;
+    max-width: 350px;
+    display: flex;
+    flex-direction: column;
+    align-items: center;
+    box-shadow: 0 35px 80px rgba(0,0,0,0.95), 0 0 50px var(--inspect-glow, rgba(255, 215, 0, 0.45));
+    text-align: center;
+    position: relative;
+    animation: inspectAppear 0.25s cubic-bezier(0.34, 1.56, 0.64, 1);
+  }
+  @keyframes inspectAppear {
+    0% { transform: scale(0.85); opacity: 0; }
+    100% { transform: scale(1); opacity: 1; }
+  }
+  .inspect-tier {
+    font-size: 11.5px;
+    font-weight: 900;
+    text-transform: uppercase;
+    letter-spacing: 2.5px;
+    color: var(--inspect-color, var(--gold-primary));
+    margin-bottom: 12px;
+    text-shadow: 0 0 14px var(--inspect-color, var(--gold-primary));
+  }
+  .inspect-img-container {
+    width: 200px;
+    height: 170px;
+    display: flex;
+    align-items: center;
+    justify-content: center;
+    margin: 14px 0;
+    position: relative;
+  }
+  .inspect-img-container::before {
+    content: '';
+    position: absolute;
+    width: 160px;
+    height: 160px;
+    background: radial-gradient(circle, var(--inspect-glow, rgba(255, 215, 0, 0.45)) 0%, transparent 75%);
+    border-radius: 50%;
+  }
+  .inspect-img {
+    max-width: 100%;
+    max-height: 100%;
+    object-fit: contain;
+    filter: drop-shadow(0 20px 28px rgba(0,0,0,0.95));
+    animation: floatInspect 3s ease-in-out infinite;
+    position: relative;
+    z-index: 2;
+  }
+  @keyframes floatInspect {
+    0%, 100% { transform: translateY(0); }
+    50% { transform: translateY(-10px); }
+  }
+  .inspect-full-name {
+    font-size: 17px;
+    font-weight: 900;
+    color: #fff;
+    margin-bottom: 8px;
+    line-height: 1.3;
+    padding: 0 5px;
+  }
+  .inspect-price {
+    font-size: 17px;
+    color: var(--gold-primary);
+    font-weight: 900;
+    margin-bottom: 24px;
+    text-shadow: 0 0 14px rgba(255, 215, 0, 0.6);
+  }
+
+  .games-tabs {
+    display: flex;
+    background: rgba(6, 9, 15, 0.9);
+    border-bottom: 1px solid var(--panel-border);
+  }
+  .game-tab-btn {
+    flex: 1;
+    padding: 13px;
+    text-align: center;
+    font-size: 11.5px;
+    font-weight: 900;
+    color: var(--text-dim);
+    background: none;
+    border: none;
+    cursor: pointer;
+    text-transform: uppercase;
+    letter-spacing: 1.2px;
+    transition: 0.2s;
+  }
+  .game-tab-btn.active {
+    color: var(--gold-primary);
+    background: rgba(255, 215, 0, 0.08);
+    border-bottom: 3px solid var(--gold-primary);
+    text-shadow: 0 0 12px rgba(255, 215, 0, 0.5);
+  }
+  .game-sub-view { display: none; flex: 1; flex-direction: column; overflow-y: auto; padding: 14px; }
+  .game-sub-view.active { display: flex; }
+
+  .clicker-box {
+    flex: 1;
+    display: flex;
+    flex-direction: column;
+    align-items: center;
+    justify-content: center;
+    gap: 26px;
+    text-align: center;
+  }
+  .clicker-coin {
+    width: 150px;
+    height: 150px;
+    border-radius: 50%;
+    background: radial-gradient(circle at 30% 30%, #fff7af, #f6b91c 50%, #d87504 100%);
+    display: flex;
+    align-items: center;
+    justify-content: center;
+    font-size: 65px;
+    font-weight: 900;
+    color: #4a2f00;
+    box-shadow: 0 0 45px rgba(255, 215, 0, 0.55), inset 0 0 22px rgba(255,255,255,0.8), 0 16px 35px rgba(0,0,0,0.7);
+    cursor: pointer;
+    transition: transform 0.08s cubic-bezier(0.34, 1.56, 0.64, 1);
+    border: 4.5px solid #fff;
+  }
+  .clicker-coin:active { transform: scale(0.9); }
+
+  .upgrade-screen {
+    display: flex;
+    flex-direction: column;
+    gap: 12px;
+    flex: 1;
+  }
+  .upgrade-top-panel {
+    display: flex;
+    flex-direction: column;
+    align-items: center;
+    position: relative;
+    padding: 8px 0;
+  }
+  
+  .upgrade-circle-container {
+    width: 130px;
+    height: 130px;
+    position: relative;
+    display: flex;
+    align-items: center;
+    justify-content: center;
+    margin-bottom: 12px;
+    filter: drop-shadow(0 0 18px rgba(255, 215, 0, 0.3));
+  }
+  .upgrade-svg-ring {
+    width: 130px;
+    height: 130px;
+    transform: rotate(-90deg);
+  }
+  .upgrade-svg-bg {
+    fill: none;
+    stroke: rgba(10, 15, 26, 0.95);
+    stroke-width: 11;
+  }
+  .upgrade-svg-progress {
+    fill: none;
+    stroke: url(#goldGradient);
+    stroke-width: 11;
+    stroke-linecap: round;
+    stroke-dasharray: 351.85;
+    stroke-dashoffset: 351.85;
+    transition: stroke-dashoffset 0.6s cubic-bezier(0.34, 1.56, 0.64, 1);
+  }
+  .upgrade-circle-content {
+    position: absolute;
+    inset: 0;
+    display: flex;
+    flex-direction: column;
+    align-items: center;
+    justify-content: center;
+    font-size: 24px;
+    font-weight: 900;
+    color: var(--gold-light);
+    text-shadow: 0 0 14px rgba(255, 215, 0, 0.7);
+  }
+
+  .upgrade-spinner-needle {
+    position: absolute;
+    top: 4px;
+    left: 50%;
+    width: 3.5px;
+    height: 50%;
+    background: var(--neon-red);
+    transform-origin: bottom center;
+    transform: translateX(-50%) rotate(0deg);
+    z-index: 5;
+    box-shadow: 0 0 12px var(--neon-red);
+    pointer-events: none;
+  }
+  .upgrade-spinner-needle::after {
+    content: '';
+    position: absolute;
+    top: -4px;
+    left: -3.5px;
+    width: 10.5px;
+    height: 10.5px;
+    background: var(--neon-red);
+    border-radius: 50%;
+  }
+
+  .upgrade-arrow-icon {
+    color: var(--gold-primary);
+    font-size: 20px;
+    display: flex;
+    align-items: center;
+    justify-content: center;
+    text-shadow: 0 0 10px rgba(255,215,0,0.6);
+  }
+
+  .upgrade-pairs {
+    display: flex;
+    justify-content: space-between;
+    align-items: center;
+    gap: 8px;
+    width: 100%;
+  }
+  .upgrade-item-card {
+    flex: 1;
+    background: var(--panel-bg);
+    border: 1px solid var(--panel-border);
+    border-radius: 16px;
+    padding: 12px;
+    display: flex;
+    flex-direction: column;
+    align-items: center;
+    position: relative;
+    min-height: 105px;
+    justify-content: center;
+    box-shadow: 0 8px 20px rgba(0,0,0,0.5);
+  }
+  .upgrade-item-card.source-slot { cursor: pointer; border-color: rgba(0, 242, 254, 0.5); }
+  .upgrade-item-card.target-slot { border-color: var(--gold-primary); cursor: default; }
+
+  .upgrade-item-card .item-name { font-size: 9px; font-weight: 800; color: #cbd5e1; margin-bottom: 4px; text-align: center; }
+  .upgrade-item-card .item-img { width: 54px; height: 54px; object-fit: contain; margin-bottom: 4px; filter: drop-shadow(0 5px 8px rgba(0,0,0,0.8)); }
+  .upgrade-item-card .item-price { font-size: 10.5px; font-weight: 900; color: var(--gold-primary); text-shadow: 0 0 8px rgba(255,215,0,0.4); }
+
+  .upgrade-grid-box {
+    flex: 1;
+    display: grid;
+    grid-template-columns: repeat(4, 1fr);
+    gap: 7px;
+    max-height: 220px;
+    overflow-y: auto;
+    padding: 2px;
+  }
+  .upgrade-target-grid-item {
+    background: var(--panel-bg);
+    border: 1px solid var(--panel-border);
+    border-radius: 12px;
+    padding: 7px 4px;
+    display: flex;
+    flex-direction: column;
+    align-items: center;
+    cursor: pointer;
+    justify-content: space-between;
+    box-shadow: 0 5px 12px rgba(0,0,0,0.35);
+  }
+  .upgrade-target-grid-item.selected { border-color: var(--gold-primary); background: rgba(255,215,0,0.15); box-shadow: 0 0 18px rgba(255,215,0,0.35); }
+  
+  .upgrade-bottom-btns {
+    display: flex;
+    gap: 10px;
+    margin-top: 10px;
+  }
+  .btn-cancel {
+    flex: 1;
+    background: linear-gradient(135deg, #ef4444, #7f1d1d);
+    color: #fff;
+    border: none;
+    border-radius: 14px;
+    padding: 13px;
+    font-weight: 900;
+    font-size: 11.5px;
+    cursor: pointer;
+    text-transform: uppercase;
+    box-shadow: 0 5px 18px rgba(239, 68, 68, 0.45);
+  }
+  .btn-upgrade-action {
+    flex: 2;
+    background: linear-gradient(135deg, var(--neon-green), #047857);
+    color: #020408;
+    border: none;
+    border-radius: 14px;
+    padding: 13px;
+    font-weight: 900;
+    font-size: 11.5px;
+    cursor: pointer;
+    text-transform: uppercase;
+    box-shadow: 0 8px 22px rgba(5, 255, 161, 0.5);
+  }
+  .btn-upgrade-action:disabled { opacity: 0.4; cursor: not-allowed; filter: grayscale(1); box-shadow: none; }
+
+  .custom-toast {
+    position: absolute;
+    top: 65px;
+    left: 50%;
+    transform: translateX(-50%) translateY(-20px);
+    background: rgba(8, 12, 20, 0.96);
+    border: 2px solid var(--gold-primary);
+    color: var(--gold-light);
+    padding: 11px 24px;
+    border-radius: 16px;
+    font-size: 12.5px;
+    font-weight: 900;
+    box-shadow: 0 18px 45px rgba(0,0,0,0.95), 0 0 30px rgba(255, 215, 0, 0.45);
+    z-index: 100;
+    opacity: 0;
+    pointer-events: none;
+    transition: transform 0.3s cubic-bezier(0.34, 1.56, 0.64, 1), opacity 0.3s ease;
+    text-align: center;
+    letter-spacing: 0.6px;
+  }
+  .custom-toast.show {
+    transform: translateX(-50%) translateY(0);
+    opacity: 1;
+  }
+
+  .tasks-screen {
+    display: none;
+    flex-direction: column;
+    flex: 1;
+    padding: 14px;
+    gap: 12px;
+  }
+  .tasks-screen.active-view { display: flex; }
+  .tasks-timer-box {
+    background: var(--panel-bg);
+    border: 1px solid var(--panel-border);
+    border-radius: 16px;
+    padding: 14px;
+    text-align: center;
+    box-shadow: 0 6px 18px rgba(0,0,0,0.45);
+  }
+  .tasks-timer-title { font-size: 10px; color: var(--text-dim); font-weight: 900; text-transform: uppercase; letter-spacing: 1.2px; }
+  .tasks-timer-val { font-size: 17px; color: var(--gold-primary); font-weight: 900; margin-top: 5px; text-shadow: 0 0 12px rgba(255, 215, 0, 0.5); }
+  
+  .task-card {
+    background: var(--panel-bg);
+    border: 1px solid var(--panel-border);
+    border-radius: 16px;
+    padding: 14px;
+    display: flex;
+    align-items: center;
+    justify-content: space-between;
+    gap: 10px;
+    box-shadow: 0 6px 18px rgba(0,0,0,0.45);
+  }
+  .task-info { flex: 1; display: flex; flex-direction: column; gap: 4px; }
+  .task-title { font-size: 11.5px; font-weight: 900; color: #fff; }
+  .task-progress { font-size: 9.5px; color: var(--text-dim); font-weight: 800; }
+  .task-reward { font-size: 11.5px; font-weight: 900; color: var(--gold-primary); text-shadow: 0 0 10px rgba(255, 215, 0, 0.4); }
+  .task-claim-btn {
+    background: linear-gradient(135deg, var(--neon-green), #047857);
+    color: #020408;
+    border: none;
+    font-size: 10.5px;
+    font-weight: 900;
+    padding: 9px 16px;
+    border-radius: 12px;
+    cursor: pointer;
+    text-transform: uppercase;
+    box-shadow: 0 5px 15px rgba(5, 255, 161, 0.45);
+  }
+  .task-claim-btn:disabled { opacity: 0.4; background: #162035; color: #64748b; cursor: not-allowed; box-shadow: none; }
+
+  .picker-modal {
+    position: absolute;
+    inset: 0;
+    background: rgba(1, 3, 6, 0.96);
+    z-index: 40;
+    display: none;
+    flex-direction: column;
+    padding: 14px;
+  }
+  .picker-grid {
+    display: grid;
+    grid-template-columns: repeat(3, 1fr);
+    gap: 9px;
+    overflow-y: auto;
+    flex: 1;
+    margin-top: 10px;
+    align-content: start;
+  }
+  .picker-grid .drop-card {
+    height: 110px;
+    width: 100%;
+  }
+
+  .modal-win {
+    position: absolute;
+    inset: 0;
+    background: rgba(1, 3, 6, 0.94);
+    backdrop-filter: blur(16px);
+    display: none;
+    flex-direction: column;
+    justify-content: center;
+    align-items: center;
+    z-index: 50;
+    perspective: 1000px;
+  }
+  #confetti-canvas {
+    position: absolute;
+    inset: 0;
+    width: 100%;
+    height: 100%;
+    pointer-events: none !important;
+    z-index: 51;
+  }
+  .card-3d-wrap {
+    position: relative;
+    transform-style: preserve-3d;
+    transition: transform 0.08s ease-out;
+    z-index: 52;
+    width: 88%;
+  }
+  .modal-box {
+    background: linear-gradient(145deg, rgba(22, 32, 52, 0.98), rgba(6, 10, 16, 0.98));
+    border: 2px solid var(--tier-color, var(--gold-primary));
+    border-radius: 32px;
+    padding: 32px 20px;
+    display: flex;
+    flex-direction: column;
+    align-items: center;
+    box-shadow: 0 35px 80px rgba(0, 0, 0, 0.95), 0 0 60px var(--tier-glow, rgba(255, 215, 0, 0.45));
+    text-align: center;
+    position: relative;
+    overflow: hidden;
+  }
+  .modal-glare {
+    position: absolute;
+    inset: 0;
+    background: radial-gradient(circle at var(--mouse-x, 50%) var(--mouse-y, 50%), rgba(255,255,255,0.25) 0%, transparent 65%);
+    pointer-events: none !important;
+  }
+  .win-tier-title {
+    font-size: 13px;
+    font-weight: 900;
+    text-transform: uppercase;
+    letter-spacing: 3.5px;
+    color: var(--tier-color, var(--gold-primary));
+    margin-bottom: 12px;
+    text-shadow: 0 0 18px var(--tier-color, var(--gold-primary));
+  }
+  .modal-item-img-box {
+    width: 180px;
+    height: 150px;
+    display: flex;
+    align-items: center;
+    justify-content: center;
+    margin: 14px 0;
+    position: relative;
+  }
+  .modal-item-img-box::before {
+    content: '';
+    position: absolute;
+    width: 140px;
+    height: 140px;
+    background: radial-gradient(circle, var(--tier-glow, rgba(255, 215, 0, 0.45)) 0%, transparent 70%);
+    border-radius: 50%;
+    animation: pulseGlow 2.4s infinite alternate;
+  }
+  @keyframes pulseGlow {
+    0% { transform: scale(0.85); opacity: 0.6; }
+    100% { transform: scale(1.3); opacity: 1; }
+  }
+  .modal-item-img {
+    max-width: 100%;
+    max-height: 100%;
+    object-fit: contain;
+    filter: drop-shadow(0 18px 25px rgba(0,0,0,0.95));
+    animation: floatItem 3.2s ease-in-out infinite;
+  }
+  @keyframes floatItem {
+    0%, 100% { transform: translateY(0); }
+    50% { transform: translateY(-10px); }
+  }
+  .modal-item-name { font-size: 17px; font-weight: 900; margin-bottom: 6px; color: #fff; }
+  .modal-item-price {
+    font-size: 16px;
+    color: var(--gold-primary);
+    font-weight: 900;
+    margin-bottom: 22px;
+    text-shadow: 0 0 12px rgba(255, 215, 0, 0.6);
+  }
+  .modal-btns-row {
+    display: flex;
+    gap: 10px;
+    width: 100%;
+    position: relative;
+    z-index: 60;
+  }
+  .modal-btn {
+    flex: 1;
+    touch-action: manipulation;
+    background: linear-gradient(135deg, var(--tier-color, var(--gold-primary)), #b8860b);
+    color: #fff;
+    border: none;
+    padding: 13px;
+    font-weight: 900;
+    border-radius: 14px;
+    cursor: pointer;
+    font-size: 11.5px;
+    letter-spacing: 1.2px;
+    box-shadow: 0 8px 22px var(--tier-glow, rgba(255, 215, 0, 0.45));
+    transition: transform 0.1s ease;
+  }
+  .modal-btn.sell-btn {
+    background: linear-gradient(135deg, #ef4444, #7f1d1d);
+    box-shadow: 0 8px 22px rgba(239, 68, 68, 0.45);
+  }
+  .modal-btn:active { transform: scale(0.94); }
+
+  .inventory-screen {
+    position: absolute;
+    inset: 0;
+    background: var(--bg-dark);
+    z-index: 15;
+    display: none;
+    flex-direction: column;
+    padding-bottom: 70px;
+    overflow-y: auto;
+  }
+
+  .bottom-nav {
+    background: rgba(4, 7, 13, 0.96);
+    backdrop-filter: blur(20px);
+    border-top: 1.5px solid rgba(255, 215, 0, 0.25);
+    display: flex;
+    justify-content: space-around;
+    padding: 8px 4px 12px 4px;
+    position: absolute;
+    bottom: 0;
+    left: 0;
+    width: 100%;
+    z-index: 30;
+    box-shadow: 0 -15px 40px rgba(0,0,0,0.9);
+  }
+  .nav-item {
+    display: flex;
+    flex-direction: column;
+    align-items: center;
+    gap: 3px;
+    color: #64748b;
+    font-size: 8.5px;
+    font-weight: 900;
+    text-transform: uppercase;
+    letter-spacing: 0.8px;
+    cursor: pointer;
+    position: relative;
+    transition: all 0.25s cubic-bezier(0.34, 1.56, 0.64, 1);
+    padding: 4px 8px;
+    border-radius: 12px;
+  }
+  .nav-item:hover { color: #cbd5e1; }
+  .nav-item.active { 
+    color: var(--gold-primary); 
+    text-shadow: 0 0 16px rgba(255, 215, 0, 0.7);
+    background: rgba(255, 215, 0, 0.08);
+    transform: translateY(-2px);
+    border: 1px solid rgba(255, 215, 0, 0.2);
+    box-shadow: 0 6px 20px rgba(255, 215, 0, 0.25);
+  }
+  .nav-icon-svg {
+    width: 22px;
+    height: 22px;
+    fill: currentColor;
+    filter: drop-shadow(0 2px 5px rgba(0,0,0,0.6));
+    transition: transform 0.25s;
+  }
+  .nav-item.active .nav-icon-svg { transform: scale(1.12); }
+  .badge-counter {
+    position: absolute;
+    top: 0px;
+    right: 4px;
+    background: linear-gradient(135deg, #ff2a6d, #b91c1c);
+    color: #fff;
+    font-size: 8.5px;
+    padding: 1px 5px;
+    border-radius: 10px;
+    font-weight: 900;
+    box-shadow: 0 2px 10px rgba(255, 42, 109, 0.8);
+    border: 1px solid rgba(255,255,255,0.3);
+  }
+</style>
+</head>
+<body>
+
+<div class="device-frame">
+  <div class="custom-toast" id="game-toast">Сообщение</div>
+
+  <div class="chances-modal" id="name-modal" onclick="closeNameModal()">
+    <div class="chances-box" onclick="event.stopPropagation()">
+      <div class="chances-title">Имя владельца карты</div>
+      <input type="text" id="player-name-input" class="name-input" maxlength="20" placeholder="Иван Иванов" onkeydown="if(event.key==='Enter') savePlayerName()">
+      <div class="modal-btns-row" style="margin-top: 4px;">
+        <button class="modal-btn sell-btn" onclick="closeNameModal()">Отмена</button>
+        <button class="modal-btn" onclick="savePlayerName()">Сохранить</button>
+      </div>
+    </div>
+  </div>
+
+  <div class="inspect-modal" id="inspect-modal" onclick="closeInspectModal()">
+    <div class="inspect-box" id="inspect-box" onclick="event.stopPropagation()">
+      <div class="inspect-tier" id="inspect-tier">RARE ITEM</div>
+      <div class="inspect-img-container">
+        <img src="" id="inspect-img" class="inspect-img" alt="Inspect Item">
+      </div>
+      <div class="inspect-full-name" id="inspect-name">Название предмета</div>
+      <div class="inspect-price" id="inspect-price">0 ₽</div>
+      <button class="modal-btn" style="width:100%; padding:13px;" onclick="closeInspectModal()">Закрыть</button>
+    </div>
+  </div>
+
+  <div class="chances-modal" id="chances-modal" onclick="closeChancesModal()">
+    <div class="chances-box" onclick="event.stopPropagation()">
+      <div class="chances-title">Шансы выпадения</div>
+      <div class="chance-row" style="--tier-color: var(--tier-rare);">
+        <span>Rare (Обычные)</span>
+        <span>75%</span>
+      </div>
+      <div class="chance-row" style="--tier-color: var(--tier-epic);">
+        <span>Epic (Эпические)</span>
+        <span>18%</span>
+      </div>
+      <div class="chance-row" style="--tier-color: var(--tier-legendary);">
+        <span>Legendary (Легендарные)</span>
+        <span>6%</span>
+      </div>
+      <div class="chance-row" style="--tier-color: var(--tier-mythic);">
+        <span>Mythic (Редчайшие)</span>
+        <span>1%</span>
+      </div>
+      <button class="modal-btn" style="margin-top: 6px; width:100%; padding:13px;" onclick="closeChancesModal()">Понятно</button>
+    </div>
+  </div>
+
+  <div class="header-bar">
+    <div class="bank-top-row">
+      <div class="profile-block" onclick="openNameModal()" title="Нажмите, чтобы изменить имя">
+        <div class="mc-card">
+          <div class="mc-chip"></div>
+          <div class="mc-circles">
+            <div class="mc-circle mc-red"></div>
+            <div class="mc-circle mc-yellow"></div>
+          </div>
+        </div>
+        <div class="player-info">
+          <div class="player-name"><span id="player-name-display">Иван Иванов</span><span class="edit-name-icon">✎</span></div>
+          <div class="player-account-id">•••• 5821 • MASTERCARD</div>
+        </div>
+      </div>
+      <div class="stats-block">
+        <div class="currency-pill money">
+          <span>₽</span> <span id="balance-money">1000000</span>
+        </div>
+      </div>
+    </div>
+    <div class="bank-bottom-row">
+      <div class="xp-bar-container">
+        <div class="xp-bar-fill" id="xp-fill"></div>
+        <div class="xp-text" id="xp-text">Уровень 1 (0/100)</div>
+      </div>
+    </div>
+  </div>
+
+  <div class="viewport active-view" id="cases-view">
+    <div class="case-group">
+      <div class="group-title">Стартовые кейсы</div>
+      <div class="group-grid">
+        <div class="case-card" onclick="openCaseView('starter')">
+          <div class="case-badge badge-starter">СТАРТЕР</div>
+          <div class="case-img-box"><img src="./stanley.jpg" alt="Starter Case"></div>
+          <div class="case-cost">1 000 ₽</div>
+        </div>
+        <div class="case-card" onclick="openCaseView('shoes')">
+          <div class="case-badge badge-starter">ОБУВЬ</div>
+          <div class="case-img-box"><img src="./jordan.jpg" alt="Shoes Case"></div>
+          <div class="case-cost">3 500 ₽</div>
+        </div>
+        <div class="case-card" onclick="openCaseView('clothes')">
+          <div class="case-badge badge-starter">ОДЕЖДА</div>
+          <div class="case-img-box"><img src="./supreme.jpg" alt="Clothes Case"></div>
+          <div class="case-cost">7 500 ₽</div>
+        </div>
+        <div class="case-card" onclick="openCaseView('accessories')">
+          <div class="case-badge badge-starter">АКСЕССУАРЫ</div>
+          <div class="case-img-box"><img src="./louis.jpg" alt="Accessories Case"></div>
+          <div class="case-cost">18 000 ₽</div>
+        </div>
+      </div>
+    </div>
+
+    <div class="case-group">
+      <div class="group-title">Средние кейсы</div>
+      <div class="group-grid five-cols">
+        <div class="case-card" onclick="openCaseView('laptops')">
+          <div class="case-badge badge-mid">НОУТБУКИ</div>
+          <div class="case-img-box"><img src="./msi.jpg" alt="Laptops Case"></div>
+          <div class="case-cost">55 000 ₽</div>
+        </div>
+        <div class="case-card" onclick="openCaseView('computers')">
+          <div class="case-badge badge-mid">КОМПЬЮТЕРЫ</div>
+          <div class="case-img-box"><img src="./titanium.jpg" alt="Computers Case"></div>
+          <div class="case-cost">120 000 ₽</div>
+        </div>
+        <div class="case-card" onclick="openCaseView('iphone')">
+          <div class="case-badge badge-mid">IPHONE</div>
+          <div class="case-img-box"><img src="./duo.jpg" alt="iPhone Case"></div>
+          <div class="case-cost">160 000 ₽</div>
+        </div>
+        <div class="case-card" onclick="openCaseView('smartphones')">
+          <div class="case-badge badge-mid">СМАРТФОНЫ</div>
+          <div class="case-img-box"><img src="./gal.jpg" alt="Smartphones Case"></div>
+          <div class="case-cost">95 000 ₽</div>
+        </div>
+        <div class="case-card" onclick="openCaseView('tv')">
+          <div class="case-badge badge-mid">TV</div>
+          <div class="case-img-box"><img src="./xi.jpg" alt="TV Case"></div>
+          <div class="case-cost">85 000 ₽</div>
+        </div>
+      </div>
+    </div>
+
+    <div class="case-group">
+      <div class="group-title">Про кейсы</div>
+      <div class="group-grid five-cols">
+        <div class="case-card" onclick="openCaseView('watches')">
+          <div class="case-badge badge-pro">ЧАСЫ</div>
+          <div class="case-img-box"><img src="./ric.jpg"></div>
+          <div class="case-cost">450 000 ₽</div>
+        </div>
+        <div class="case-card" onclick="openCaseView('cars')">
+          <div class="case-badge badge-pro">МАШИНЫ</div>
+          <div class="case-img-box"><img src="./lam.jpg"></div>
+          <div class="case-cost">2.8M ₽</div>
+        </div>
+        <div class="case-card" onclick="openCaseView('villas')">
+          <div class="case-badge badge-pro">ВИЛЛЫ</div>
+          <div class="case-img-box"><img src="./bel.jpg"></div>
+          <div class="case-cost">22M ₽</div>
+        </div>
+        <div class="case-card bmw-featured" onclick="openCaseView('bmw')">
+          <div class="case-badge badge-bmw">BMW M</div>
+          <div class="case-img-box"><img src="./xm.jpg"></div>
+          <div class="case-cost">14M ₽</div>
+        </div>
+        <div class="case-card" onclick="openCaseView('art')">
+          <div class="case-badge badge-pro">АРТ</div>
+          <div class="case-img-box"><img src="./ban.jpg"></div>
+          <div class="case-cost">4M ₽</div>
+        </div>
+      </div>
+    </div>
+
+    <div class="case-group">
+      <div class="group-title">Лучшие кейсы</div>
+      <div class="group-grid five-cols">
+        <div class="case-card" onclick="openCaseView('supercars')">
+          <div class="case-badge badge-elite">СУПЕРКАРЫ</div>
+          <div class="case-img-box"><img src="./bug.jpg"></div>
+          <div class="case-cost">55M ₽</div>
+        </div>
+        <div class="case-card" onclick="openCaseView('planes')">
+          <div class="case-badge badge-elite">САМОЛЕТЫ</div>
+          <div class="case-img-box"><img src="./air.jpg"></div>
+          <div class="case-cost">280M ₽</div>
+        </div>
+        <div class="case-card" onclick="openCaseView('major')">
+          <div class="case-badge badge-elite">МАЖОР</div>
+          <div class="case-img-box"><img src="./jac.jpg"></div>
+          <div class="case-cost">1.5B ₽</div>
+        </div>
+        <div class="case-card" onclick="openCaseView('business')">
+          <div class="case-badge badge-elite">БИЗНЕС</div>
+          <div class="case-img-box"><img src="./bank.jpg"></div>
+          <div class="case-cost">12B ₽</div>
+        </div>
+        <div class="case-card" onclick="openCaseView('luxury')">
+          <div class="case-badge badge-elite">РОСКОШЬ</div>
+          <div class="case-img-box"><img src="./cro.jpg"></div>
+          <div class="case-cost">45B ₽</div>
+        </div>
+      </div>
+    </div>
+  </div>
+
+  <div class="viewport" id="games-view">
+    <div class="games-tabs">
+      <button class="game-tab-btn active" onclick="switchGameTab('clicker', this)">Кликер</button>
+      <button class="game-tab-btn" onclick="switchGameTab('upgrade', this)">Улучшить</button>
+    </div>
+
+    <div class="game-sub-view active" id="tab-clicker">
+      <div class="clicker-box">
+        <div style="font-size: 13.5px; font-weight: 900; color: var(--gold-light); text-shadow: 0 0 10px rgba(255,215,0,0.4);">Тапай по рублю (+10 ₽ за тап)!</div>
+        <div class="clicker-coin" onclick="tapCoin(event)">₽</div>
+      </div>
+    </div>
+
+    <div class="game-sub-view" id="tab-upgrade">
+      <div class="upgrade-screen">
+        <div class="upgrade-top-panel">
+          <div class="upgrade-circle-container" id="upgrade-circle-container">
+            <svg class="upgrade-svg-ring" viewBox="0 0 130 130">
+              <defs>
+                <linearGradient id="goldGradient" x1="0%" y1="0%" x2="100%" y2="100%">
+                  <stop offset="0%" stop-color="#fff68f" />
+                  <stop offset="50%" stop-color="#ffd700" />
+                  <stop offset="100%" stop-color="#ff7700" />
+                </linearGradient>
+              </defs>
+              <circle class="upgrade-svg-bg" cx="65" cy="65" r="56"></circle>
+              <circle class="upgrade-svg-progress" id="svg-progress-circle" cx="65" cy="65" r="56"></circle>
+            </svg>
+            <div class="upgrade-spinner-needle" id="upgrade-needle"></div>
+            <div class="upgrade-circle-content" id="upgrade-chance-text">0%</div>
+          </div>
+
+          <div class="upgrade-pairs">
+            <div class="upgrade-item-card source-slot" onclick="openInventoryPicker()">
+              <div class="item-name" id="src-name">Выберите предмет</div>
+              <img src="" class="item-img" id="src-img" style="display:none;">
+              <div class="item-price" id="src-price"></div>
+            </div>
+            <div class="upgrade-arrow-icon">▶</div>
+            <div class="upgrade-item-card target-slot">
+              <div class="item-name" id="tgt-name">Цель (из сетки)</div>
+              <img src="" class="item-img" id="tgt-img" style="display:none;">
+              <div class="item-price" id="tgt-price"></div>
+            </div>
+          </div>
+        </div>
+
+        <div style="font-size: 10px; font-weight: 900; color: var(--text-dim);" id="targets-label">Возможные цели (нажмите на цель для установки шанса):</div>
+        <div class="upgrade-grid-box" id="upgrade-targets-grid">
+          <div style="grid-column: span 4; text-align: center; font-size: 10.5px; color: var(--text-dim); padding: 30px;">Сначала выберите свой предмет слева</div>
+        </div>
+
+        <div class="upgrade-bottom-btns">
+          <button class="btn-cancel" onclick="resetUpgrade()">Отмена</button>
+          <button class="btn-upgrade-action" id="exec-upgrade-btn" onclick="executeUpgrade()" disabled>УЛУЧШИТЬ</button>
+        </div>
+      </div>
+    </div>
+  </div>
+
+  <div class="viewport" id="tasks-view">
+    <div class="tasks-screen active-view" id="tasks-content">
+      <div class="tasks-timer-box">
+        <div class="tasks-timer-title">Следующие задания через:</div>
+        <div class="tasks-timer-val" id="tasks-timer">00:00:00</div>
+      </div>
+      <div style="font-size: 10.5px; font-weight: 900; color: var(--gold-light); text-transform: uppercase; letter-spacing: 0.8px; margin-top: 4px;">Выполните задания для получения рублей:</div>
+      <div id="tasks-list-container" style="display: flex; flex-direction: column; gap: 9px;"></div>
+    </div>
+  </div>
+
+  <div class="picker-modal" id="inventory-picker-modal">
+    <div class="top-action-bar" style="background:none; border:none; padding:0 0 8px 0;">
+      <div style="font-weight: 900; font-size: 14px; color: var(--gold-light);">Выберите предмет из инвентаря</div>
+      <button class="back-btn" onclick="closeInventoryPicker()">✕</button>
+    </div>
+    <div class="picker-grid" id="picker-items-grid"></div>
+  </div>
+
+  <div class="case-view-screen" id="case-screen">
+    <div class="top-action-bar">
+      <button class="back-btn" onclick="closeCaseView()">❮</button>
+      <div class="case-header-price" id="case-title-price">Цена - 1 000 ₽</div>
+      <div class="currency-pill money" style="padding: 4px 8px; font-size: 11px;">
+        <span>₽</span> <span id="case-screen-balance">15 000</span>
+      </div>
+      <button class="info-btn" onclick="openChancesModal()" title="Шансы выпадения">i</button>
+    </div>
+
+    <div class="roulette-container">
+      <div class="roulette-arrows">
+        <div class="arrow-top">▼</div>
+        <div class="arrow-bottom">▲</div>
+      </div>
+      <div class="roulette-track" id="roulette-track"></div>
+    </div>
+
+    <div class="multi-selectors">
+      <button class="multi-btn active" onclick="setMultiplier(1, this)">X1</button>
+      <button class="multi-btn" onclick="setMultiplier(2, this)">X2</button>
+      <button class="multi-btn" onclick="setMultiplier(3, this)">X3</button>
+      <button class="multi-btn" onclick="setMultiplier(6, this)">X6</button>
+    </div>
+
+    <button class="open-btn" id="roll-button" onclick="spinCase()">Открыть кейс</button>
+    <div class="case-contents-grid" id="case-items-container"></div>
+  </div>
+
+  <div class="inventory-screen" id="inventory-screen">
+    <div class="top-action-bar">
+      <div style="font-weight: 900; font-size: 15px; color: var(--gold-light);">Ваш инвентарь (<span id="inv-count">0</span>)</div>
+      <button class="multi-btn" onclick="sellAllItems()">Продать всё</button>
+    </div>
+    <div class="case-contents-grid" id="inventory-grid"></div>
+  </div>
+
+  <div class="modal-win" id="win-modal">
+    <canvas id="confetti-canvas"></canvas>
+    
+    <div class="card-3d-wrap" id="card-3d">
+      <div class="modal-box" id="modal-box-tier">
+        <div class="modal-glare"></div>
+        <div class="win-tier-title" id="win-tier">LEGENDARY ITEM</div>
+        <div class="modal-item-img-box">
+          <img src="" id="win-img" class="modal-item-img" alt="Drop">
+        </div>
+        <div class="modal-item-name" id="win-name">Ferrari 250 GTO</div>
+        <div class="modal-item-price" id="win-price">50 000 000 ₽</div>
+        
+        <div class="modal-btns-row">
+          <button class="modal-btn sell-btn" onclick="sellWonItemDirectly()">Продать за <span id="win-sell-price">0</span> ₽</button>
+          <button class="modal-btn" onpointerdown="claimPrize(event)">В инвентарь</button>
+        </div>
+      </div>
+    </div>
+  </div>
+
+  <div class="bottom-nav">
+    <div class="nav-item" id="nav-inv" onclick="switchTab('inventory')">
+      <span class="badge-counter" id="inv-badge">0</span>
+      <svg class="nav-icon-svg" viewBox="0 0 24 24"><path d="M21 5H3a1 1 0 0 0-1 1v12a1 1 0 0 0 1 1h18a1 1 0 0 0 1-1V6a1 1 0 0 0-1-1zm-1 2v2H4V7h16zm0 10H4v-8h16v8zm-9-5h2v2h-2z"/></svg>
+      <span>ИНВЕНТАРЬ</span>
+    </div>
+    <div class="nav-item active" id="nav-cases" onclick="switchTab('cases')">
+      <svg class="nav-icon-svg" viewBox="0 0 24 24"><path d="M19 3H5c-1.1 0-2 .9-2 2v14c0 1.1.9 2 2 2h14c1.1 0 2-.9 2-2V5c0-1.1-.9-2-2-2zm0 16H5V5h14v14zM7 10h2v7H7zm4-3h2v10h-2zm4 5h2v5h-2z"/></svg>
+      <span>КЕЙСЫ</span>
+    </div>
+    <div class="nav-item" id="nav-games" onclick="switchTab('games')">
+      <svg class="nav-icon-svg" viewBox="0 0 24 24"><path d="M21 6H3c-1.1 0-2 .9-2 2v8c0 1.1.9 2 2 2h18c1.1 0 2-.9 2-2V8c0-1.1-.9-2-2-2zm0 10H3V8h18v8zM6 10h2v2h2v2H8v2H6v-2H4v-2h2z"/><circle cx="15.5" cy="11.5" r="1.5"/><circle cx="18.5" cy="13.5" r="1.5"/></svg>
+      <span>ИГРЫ</span>
+    </div>
+    <div class="nav-item" id="nav-tasks" onclick="switchTab('tasks')">
+      <svg class="nav-icon-svg" viewBox="0 0 24 24"><path d="M19 3H5c-1.1 0-2 .9-2 2v14c0 1.1.9 2 2 2h14c1.1 0 2-.9 2-2V5c0-1.1-.9-2-2-2zm0 16H5V5h14v14zM7 7h10v2H7zm0 4h10v2H7zm0 4h7v2H7 z"/></svg>
+      <span>ЗАДАНИЯ</span>
+    </div>
+  </div>
+</div>
+
+<script>
+  let balance = 15000;
+  let inventory = [];
+  let isSpinning = false;
+  let activeCase = null;
+  let currentWonItem = null;
+  let confettiAnimationId = null;
+
+  let playerXP = 0;
+  let playerLevel = 1;
+
+  let currentMultiplier = 1; 
+  let pendingWonItems = [];
+
+  let activeTasks = [];
+  let taskTimerSeconds = 0;
+  let playerName = 'Иван Иванов';
+
+  function saveGameData() {
+    const gameData = {
+      balance: balance,
+      inventory: inventory,
+      playerXP: playerXP,
+      playerLevel: playerLevel,
+      playerName: playerName
+    };
+    localStorage.setItem('vip_case_simulator_save', JSON.stringify(gameData));
+  }
+
+  function loadGameData() {
+    const saved = localStorage.getItem('vip_case_simulator_save');
+    if (saved) {
+      try {
+        const data = JSON.parse(saved);
+        if (data.balance !== undefined) balance = data.balance;
+        if (data.inventory !== undefined) inventory = data.inventory;
+        if (data.playerXP !== undefined) playerXP = data.playerXP;
+        if (data.playerLevel !== undefined) playerLevel = data.playerLevel;
+        if (data.playerName !== undefined) playerName = data.playerName;
+      } catch(e) {
+        console.error("Ошибка загрузки сохранения:", e);
+      }
+    } else {
+      const oldName = localStorage.getItem('vip_player_name');
+      if (oldName) playerName = oldName;
+    }
+  }
+
+  function updatePlayerNameUI() {
+    document.getElementById('player-name-display').innerText = playerName;
+  }
+
+  function openNameModal() {
+    const input = document.getElementById('player-name-input');
+    input.value = playerName;
+    document.getElementById('name-modal').style.display = 'flex';
+    setTimeout(() => {
+      input.focus();
+      input.select();
+    }, 50);
+  }
+
+  function closeNameModal() {
+    document.getElementById('name-modal').style.display = 'none';
+  }
+
+  function savePlayerName() {
+    const input = document.getElementById('player-name-input');
+    const newName = input.value.trim();
+    if (newName) {
+      playerName = newName;
+    } else {
+      playerName = 'Иван Иванов';
+    }
+    updatePlayerNameUI();
+    closeNameModal();
+    saveGameData();
+    showToast("Имя успешно обновлено!");
+  }
+
+  function showToast(text) {
+    const toast = document.getElementById('game-toast');
+    toast.innerText = text;
+    toast.classList.add('show');
+    setTimeout(() => {
+      toast.classList.remove('show');
+    }, 2200);
+  }
+
+  function openChancesModal() {
+    document.getElementById('chances-modal').style.display = 'flex';
+  }
+
+  function closeChancesModal() {
+    document.getElementById('chances-modal').style.display = 'none';
+  }
+
+  function inspectItem(item) {
+    const tierData = RARITY[item.tier || 'rare'];
+    const modal = document.getElementById('inspect-modal');
+    const box = document.getElementById('inspect-box');
+
+    document.getElementById('inspect-tier').innerText = `${tierData.name} ITEM`;
+    document.getElementById('inspect-name').innerText = item.name;
+    document.getElementById('inspect-img').src = item.img;
+    document.getElementById('inspect-price').innerText = `${formatMoney(item.price)}`;
+
+    box.style.setProperty('--inspect-color', tierData.color);
+    box.style.setProperty('--inspect-glow', tierData.glow);
+
+    modal.style.display = 'flex';
+  }
+
+  function closeInspectModal() {
+    document.getElementById('inspect-modal').style.display = 'none';
+  }
+
+  function initTasks() {
+    generateRandomTasks();
+    setInterval(updateTaskTimer, 1000);
+  }
+
+  function generateRandomTasks() {
+    const taskTemplates = [
+      { id: 'cases', title: 'Открыть 5 премиум кейсов', max: 5, reward: 10000, type: 'cases' },
+      { id: 'clicks', title: 'Сделать 50 тапов в кликере', max: 50, reward: 2500, type: 'clicks' },
+      { id: 'upgrades', title: 'Совершить 2 попытки апгрейда', max: 2, reward: 6000, type: 'upgrades' },
+      { id: 'cases2', title: 'Открыть 3 кейса', max: 3, reward: 6000, type: 'cases' },
+      { id: 'clicks2', title: 'Сделать 100 тапов в кликере', max: 100, reward: 5000, type: 'clicks' },
+      { id: 'upgrades2', title: 'Совершить 4 попытки апгрейда', max: 4, reward: 12000, type: 'upgrades' }
+    ];
+
+    let shuffled = [...taskTemplates].sort(() => 0.5 - Math.random());
+    activeTasks = shuffled.slice(0, 3).map(t => ({
+      ...t,
+      current: 0,
+      claimed: false
+    }));
+
+    renderTasksUI();
+  }
+
+  function reportTaskProgress(type, amount = 1) {
+    if (taskTimerSeconds > 0) return;
+    let updated = false;
+    activeTasks.forEach(task => {
+      if (task.type === type && !task.claimed) {
+        task.current = Math.min(task.max, task.current + amount);
+        updated = true;
+      }
+    });
+    if (updated) renderTasksUI();
+  }
+
+  function renderTasksUI() {
+    const listContainer = document.getElementById('tasks-list-container');
+    if (!listContainer) return;
+    listContainer.innerHTML = '';
+
+    activeTasks.forEach((task, index) => {
+      const isReady = task.current >= task.max && !task.claimed;
+      const card = document.createElement('div');
+      card.className = 'task-card';
+      card.innerHTML = `
+        <div class="task-info">
+          <div class="task-title">${task.title}</div>
+          <div class="task-progress">Прогресс: ${task.current} / ${task.max}</div>
+          <div class="task-reward">Награда: +${task.reward.toLocaleString('ru-RU')} ₽</div>
+        </div>
+        <button class="task-claim-btn" ${!isReady && !task.claimed ? 'disabled' : ''} onclick="claimTask(${index})">
+          ${task.claimed ? 'Получено' : 'Забрать'}
+        </button>
+      `;
+      listContainer.appendChild(card);
+    });
+  }
+
+  function claimTask(index) {
+    let task = activeTasks[index];
+    if (task.current < task.max || task.claimed) return;
+
+    task.claimed = true;
+    balance += task.reward;
+    updateBalanceUI();
+    renderTasksUI();
+    saveGameData();
+
+    if (activeTasks.every(t => t.claimed)) {
+      taskTimerSeconds = 3600;
+    }
+  }
+
+  function updateTaskTimer() {
+    if (taskTimerSeconds > 0) {
+      taskTimerSeconds--;
+      let h = Math.floor(taskTimerSeconds / 3600).toString().padStart(2, '0');
+      let m = Math.floor((taskTimerSeconds % 3600) / 60).toString().padStart(2, '0');
+      let s = (taskTimerSeconds % 60).toString().padStart(2, '0');
+      document.getElementById('tasks-timer').innerText = `${h}:${m}:${s}`;
+      
+      if (taskTimerSeconds === 0) {
+        generateRandomTasks();
+      }
+    } else {
+      document.getElementById('tasks-timer').innerText = "00:00:00 (Доступно)";
+    }
+  }
+
+  function addXP(amount) {
+    playerXP += amount;
+    let neededXP = playerLevel * 250;
+    if (playerXP >= neededXP) {
+      playerXP -= neededXP;
+      playerLevel++;
+    }
+    updateXPUI();
+    saveGameData();
+  }
+
+  function updateXPUI() {
+    let neededXP = playerLevel * 250;
+    let percent = Math.min(100, (playerXP / neededXP) * 100);
+    document.getElementById('xp-fill').style.width = percent + '%';
+    document.getElementById('xp-text').innerText = `Уровень ${playerLevel} (${playerXP}/${neededXP})`;
+  }
+
+  let audioCtx = null;
+  function playTickSound() {
+    try {
+      if (!audioCtx) audioCtx = new (window.AudioContext || window.webkitAudioContext)();
+      
+      const osc = audioCtx.createOscillator();
+      const gain = audioCtx.createGain();
+      const filter = audioCtx.createBiquadFilter();
+
+      osc.type = 'sine';
+      osc.frequency.setValueAtTime(460, audioCtx.currentTime);
+      osc.frequency.exponentialRampToValueAtTime(90, audioCtx.currentTime + 0.035);
+
+      filter.type = 'bandpass';
+      filter.frequency.value = 1200;
+
+      gain.gain.setValueAtTime(0.2, audioCtx.currentTime);
+      gain.gain.exponentialRampToValueAtTime(0.001, audioCtx.currentTime + 0.035);
+
+      osc.connect(filter);
+      filter.connect(gain);
+      gain.connect(audioCtx.destination);
+
+      osc.start();
+      osc.stop(audioCtx.currentTime + 0.035);
+    } catch(e) {}
+  }
+
+  const RARITY = {
+    rare: { name: 'RARE', color: '#00b0ff', glow: 'rgba(0, 176, 255, 0.45)' },
+    epic: { name: 'EPIC', color: '#d500f9', glow: 'rgba(213, 0, 249, 0.5)' },
+    legendary: { name: 'LEGENDARY', color: '#ffab00', glow: 'rgba(255, 171, 0, 0.55)' },
+    mythic: { name: 'MYTHIC', color: '#ff1744', glow: 'rgba(255, 23, 68, 0.65)' }
+  };
+
+  const DATABASE = {
+    starter: { name: "СТАРТЕР", price: 1000, xp: 15, items: [
+      { name: "Спиннер премиум", price: 200, tier: 'rare', img: "./spinner.jpg" },
+      { name: "Кружка VIP", price: 450, tier: 'rare', img: "./mug.jpg" },
+      { name: "Кабель Type-C Gold", price: 700, tier: 'rare', img: "./cable.jpg" },
+      { name: "Флешка Gold 64GB", price: 1500, tier: 'epic', img: "./usb.jpg" },
+      { name: "Ручка Parker Gold", price: 3500, tier: 'legendary', img: "./pen.jpg" },
+      { name: "Термос Stanley VIP", price: 8000, tier: 'mythic', img: "./stanley.jpg" }
+    ]},
+    shoes: { name: "ОБУВЬ", price: 3500, xp: 40, items: [
+      { name: "Vans Old Skool", price: 1200, tier: 'rare', img: "./vans.jpg" },
+      { name: "Converse Chuck 70", price: 2100, tier: 'rare', img: "./converse.jpg" },
+      { name: "Nike Air Force 1", price: 3800, tier: 'epic', img: "./airforce.jpg" },
+      { name: "New Balance 574", price: 5500, tier: 'epic', img: "./nb.jpg" },
+      { name: "Adidas Yeezy 350", price: 14000, tier: 'legendary', img: "./yeezy.jpg" },
+      { name: "Jordan 1 Retro High", price: 32000, tier: 'mythic', img: "./jordan.jpg" }
+    ]},
+    clothes: { name: "ОДЕЖДА", price: 7500, xp: 60, items: [
+      { name: "Футболка Oversize Lux", price: 2500, tier: 'rare', img: "./tshirt.jpg" },
+      { name: "Лонгслив Carhartt", price: 4500, tier: 'rare', img: "./carhartt.jpg" },
+      { name: "Худи Champion Lux", price: 8500, tier: 'epic', img: "./champion.jpg" },
+      { name: "Худи Stüssy 8-Ball", price: 14000, tier: 'epic', img: "./stussy.jpg" },
+      { name: "Худи Supreme Box Logo", price: 38000, tier: 'legendary', img: "./supreme.jpg" },
+      { name: "Зип-худи balenciaga", price: 85000, tier: 'mythic', img: "./balenciaga.jpg" }
+    ]},
+    accessories: { name: "АКСЕССУАРЫ", price: 18000, xp: 120, items: [
+      { name: "Кепка New Era NY", price: 5000, tier: 'rare', img: "./cap.jpg" },
+      { name: "Ремень Calvin Klein", price: 9500, tier: 'rare', img: "./belt.jpg" },
+      { name: "Кошелек Bellroy Slim", price: 16000, tier: 'epic', img: "./wallet.jpg" },
+      { name: "Очки Ray-Ban Gold", price: 24000, tier: 'epic', img: "./rb.jpg" },
+      { name: "Шарф Burberry Classic", price: 75000, tier: 'legendary', img: "./scarf.jpg" },
+      { name: "Сумка Louis Vuitton Trio", price: 210000, tier: 'mythic', img: "./louis.jpg" }
+    ]},
+    iphone: { name: "IPHONE", price: 160000, xp: 300, items: [
+      { name: "iPhone 14 Pro Max 512 GB", price: 65000, tier: 'rare', img: "./14.jpg" },
+      { name: "iPhone 15 Pro Max 512 GB", price: 98000, tier: 'rare', img: "./15.jpg" },
+      { name: "iPhone 16 Pro Max 1 TB", price: 140000, tier: 'epic', img: "./16.jpg" },
+      { name: "iPhone 17 Pro Max 512 GB", price: 220000, tier: 'epic', img: "./17.jpg" },
+      { name: "iPhone 18 Pro Max 1 TB", price: 450000, tier: 'legendary', img: "./18.jpg" },
+      { name: "iPhone Duo 2 TB", price: 950000, tier: 'mythic', img: "./duo.jpg" }
+    ]},
+    smartphones: { name: "СМАРТФОНЫ", price: 95000, xp: 350, items: [
+      { name: "Xiaomi Redmi Note 15 Pro", price: 32000, tier: 'rare', img: "./xia.jpg" },
+      { name: "Google Pixel 10a", price: 54000, tier: 'rare', img: "./google.jpg" },
+      { name: "OnePlus 16 Lux", price: 88000, tier: 'epic', img: "./one.jpg" },
+      { name: "Google Pixel 11 Pro XL", price: 125000, tier: 'epic', img: "./goo.jpg" },
+      { name: "Samsung S26 Ultra", price: 290000, tier: 'legendary', img: "./sam.jpg" },
+      { name: "Galaxy Z Fold 8 Gold", price: 650000, tier: 'mythic', img: "./gal.jpg" }
+    ]},
+    tv: { name: "TV", price: 85000, xp: 320, items: [
+      { name: "Xiaomi TV A 55\"", price: 28000, tier: 'rare', img: "./xi.jpg" },
+      { name: "Hisense ULED 65\"", price: 49000, tier: 'rare', img: "./hi.jpg" },
+      { name: "LG OLED C4 55\"", price: 115000, tier: 'epic', img: "./lg.jpg" },
+      { name: "Samsung S95D OLED 65\"", price: 220000, tier: 'epic', img: "./sa.jpg" },
+      { name: "Sony Bravia 9 MiniLED 85\"", price: 520000, tier: 'legendary', img: "./so.jpg" },
+      { name: "Samsung The Wall MicroLED 110\"", price: 1800000, tier: 'mythic', img: "./samsung.jpg" }
+    ]},
+    computers: { name: "КОМПЬЮТЕРЫ", price: 120000, xp: 650, items: [
+      { name: "CyberStart RTX 4060", price: 75000, tier: 'rare', img: "./cyber.jpg" },
+      { name: "NeonGlow RTX 4070", price: 105000, tier: 'rare', img: "./neon.jpg" },
+      { name: "Crystal RTX 4070 Ti", price: 165000, tier: 'epic', img: "./crystal.jpg" },
+      { name: "Liquid RTX 4080", price: 240000, tier: 'epic', img: "./liquid.jpg" },
+      { name: "ROG Maximus RTX 4090", price: 550000, tier: 'legendary', img: "./rog.jpg" },
+      { name: "Titanium God RTX 5090", price: 1200000, tier: 'mythic', img: "./titanium.jpg" }
+    ]},
+    laptops: { name: "НОУТБУКИ", price: 55000, xp: 500, items: [
+      { name: "ASUS Vivobook 16", price: 35000, tier: 'rare', img: "./vivo.jpg" },
+      { name: "Lenovo Legion 5", price: 48000, tier: 'rare', img: "./lenovo.jpg" },
+      { name: "Surface Laptop 7", price: 85000, tier: 'epic', img: "./micro.jpg" },
+      { name: "MacBook Pro M4 Max", price: 190000, tier: 'epic', img: "./mac.jpg" },
+      { name: "ROG Zephyrus G16", price: 420000, tier: 'legendary', img: "./asus.jpg" },
+      { name: "MSI Titan 18 HX Gold", price: 950000, tier: 'mythic', img: "./msi.jpg" }
+    ]},
+    watches: { name: "ЧАСЫ", price: 450000, xp: 1500, items: [
+      { name: "Tissot PRX Powermatic 80", price: 250000, tier: 'rare', img: "./tis.jpg" },
+      { name: "Omega Speedmaster Moonwatch", price: 380000, tier: 'rare', img: "./omega.jpg" },
+      { name: "Rolex Daytona «Panda»", price: 850000, tier: 'epic', img: "./rol.jpg" },
+      { name: "AP Royal Oak Jumbo", price: 2100000, tier: 'epic', img: "./aud.jpg" },
+      { name: "Patek Philippe Nautilus 5711", price: 5500000, tier: 'legendary', img: "./pat.jpg" },
+      { name: "Jacob & Co. Epic X Skeleton (Racing) Black Titanium Red", price: 35000000, tier: 'mythic', img: "./ric.jpg" }
+    ]},
+    cars: { name: "МАШИНЫ", price: 2800000, xp: 900, items: [
+      { name: "Geely Monjaro Lux", price: 1500000, tier: 'rare', img: "./gee.jpg" },
+      { name: "Exeed RX Premium", price: 2200000, tier: 'rare', img: "./exe.jpg" },
+      { name: "Zeekr 001 FR", price: 5500000, tier: 'epic', img: "./zee.jpg" },
+      { name: "Porsche 911 Turbo S", price: 14000000, tier: 'epic', img: "./por.jpg" },
+      { name: "Mercedes-AMG G 63 Mansory", price: 35000000, tier: 'legendary', img: "./mer.jpg" },
+      { name: "Lamborghini Revuelto V12", price: 85000000, tier: 'mythic', img: "./lam.jpg" }
+    ]},
+    villas: { name: "ВИЛЛЫ", price: 22000000, xp: 1200, items: [
+      { name: "Вилла на Бали Lux", price: 12000000, tier: 'rare', img: "./bal.jpg" },
+      { name: "Пентхаус Premium", price: 18000000, tier: 'rare', img: "./pent.jpg" },
+      { name: "Вилла в Марбелье", price: 48000000, tier: 'epic', img: "./mar.jpg" },
+      { name: "Особняк в Майами", price: 120000000, tier: 'legendary', img: "./may.jpg" },
+      { name: "Вилла на озере Комо", price: 280000000, tier: 'legendary', img: "./com.jpg" },
+      { name: "The One (Бель-Эйр)", price: 850000000, tier: 'mythic', img: "./bel.jpg" }
+    ]},
+    bmw: { name: "BMW", price: 14000000, xp: 800, items: [
+      { name: "BMW iX3 Neue Klasse", price: 8000000, tier: 'rare', img: "./ix3.jpg" },
+      { name: "BMW 5 Series (G60) M Sport", price: 11000000, tier: 'rare', img: "./g60.jpg" },
+      { name: "BMW M3 Competition (G80)", price: 32000000, tier: 'epic', img: "./m3.jpg" },
+      { name: "BMW X5 M Competition", price: 85000000, tier: 'legendary', img: "./x5.jpg" },
+      { name: "BMW Alpina XB7", price: 180000000, tier: 'legendary', img: "./xb7.jpg" },
+      { name: "BMW XM Label Red", price: 550000000, tier: 'mythic', img: "./xm.jpg" }
+    ]},
+    art: { name: "АРТ", price: 4000000, xp: 500, items: [
+      { name: "KAWS — Holiday Space", price: 1500000, tier: 'rare', img: "./kaw.jpg" },
+      { name: "Takashi Murakami — Flower Ball", price: 2800000, tier: 'rare', img: "./tak.jpg" },
+      { name: "Daniel Arsham — Eroded 911", price: 9500000, tier: 'epic', img: "./dan.jpg" },
+      { name: "Jeff Koons — Balloon Dog (Magenta)", price: 28000000, tier: 'legendary', img: "./jef.jpg" },
+      { name: "Refik Anadol — Machine Hallucinations", price: 65000000, tier: 'legendary', img: "./dam.jpg" },
+      { name: "Banksy — Girl with Balloon (Shredded)", price: 180000000, tier: 'mythic', img: "./ban.jpg" }
+    ]},
+    supercars: { name: "СУПЕРКАРЫ", price: 55000000, xp: 3000, items: [
+      { name: "Ferrari 296 Speciale", price: 25000000, tier: 'rare', img: "./fer.jpg" },
+      { name: "McLaren 750S Spider", price: 42000000, tier: 'rare', img: "./mc.jpg" },
+      { name: "Lamborghini Temerario", price: 120000000, tier: 'epic', img: "./lam.jpg" },
+      { name: "Ferrari F80", price: 350000000, tier: 'legendary', img: "./ferr.jpg" },
+      { name: "McLaren W1", price: 650000000, tier: 'legendary', img: "./mcl.jpg" },
+      { name: "Bugatti Tourbillon", price: 1500000000, tier: 'mythic', img: "./bug.jpg" }
+    ]},
+    planes: { name: "САМОЛЕТЫ", price: 280000000, xp: 4500, items: [
+      { name: "Cirrus SF50 Vision Jet G2+", price: 120000000, tier: 'rare', img: "./cir.jpg" },
+      { name: "Pilatus PC-24", price: 210000000, tier: 'rare', img: "./pil.jpg" },
+      { name: "Embraer Praetor 600", price: 550000000, tier: 'epic', img: "./emb.jpg" },
+      { name: "Gulfstream G700", price: 1800000000, tier: 'legendary', img: "./gul.jpg" },
+      { name: "Bombardier Global 8000", price: 4500000000, tier: 'legendary', img: "./bom.jpg" },
+      { name: "Airbus ACJ350 Custom Lux", price: 22000000000, tier: 'mythic', img: "./air.jpg" }
+    ]},
+    major: { name: "МАЖОР", price: 1500000000, xp: 10000, items: [
+      { name: "Superyacht Project 400", price: 800000000, tier: 'rare', img: "./pro.jpg" },
+      { name: "Jacob & Co. Billionaire Ashoka", price: 1200000000, tier: 'rare', img: "./jac.jpg" },
+      { name: "Ferrari FXX-K Evo", price: 4500000000, tier: 'epic', img: "./fxx.jpg" },
+      { name: "Private island in the Bahamas", price: 9500000000, tier: 'epic', img: "./bag.jpg" },
+      { name: "Picasso painting", price: 28000000000, tier: 'legendary', img: "./pab.jpg" },
+      { name: "One Hyde Park penthouse", price: 75000000000, tier: 'legendary', img: "./hyd.jpg" }
+    ]},
+    business: { name: "БИЗНЕС", price: 12000000000, xp: 25000, items: [
+      { name: "Starbucks Global Stake", price: 5000000000, tier: 'rare', img: "./sta.jpg" },
+      { name: "FC Manchester United", price: 8500000000, tier: 'rare', img: "./fc.jpg" },
+      { name: "SpaceX Private Cosmodrome", price: 35000000000, tier: 'epic', img: "./spa.jpg" },
+      { name: "Ghawar Oil Fields", price: 75000000000, tier: 'epic', img: "./gha.jpg" },
+      { name: "Apple Inc Prime Shares", price: 250000000000, tier: 'legendary', img: "./app.jpg" },
+      { name: "Bank of Switzerland Crown", price: 950000000000, tier: 'mythic', img: "./bank.jpg" }
+    ]},
+            luxury: { name: "РОСКОШЬ", price: 45000000000, xp: 40000, items: [
+      { name: "Часы Graff Hallucination", price: 18000000000, tier: 'rare', img: "./gra.jpg" },
+      { name: "Частный остров Кей", price: 32000000000, tier: 'rare', img: "./kei.jpg" },
+      { name: "Вино Château Margaux 1787", price: 120000000000, tier: 'epic', img: "./vin.jpg" },
+      { name: "Золотой унитаз 24 карата", price: 350000000000, tier: 'legendary', img: "./zol.jpg" },
+      { name: "Императорское яйцо Фаберже", price: 750000000000, tier: 'legendary', img: "./egg.jpg" },
+      { name: "Королевские регалии Империи", price: 3500000000000, tier: 'mythic', img: "./cro.jpg" }
+    ]}
+
+
+  };
+
+  function formatMoney(amount) {
+    if (amount >= 1e12) return (amount / 1e12).toFixed(2) + " трлн ₽";
+    if (amount >= 1e9) return (amount / 1e9).toFixed(1) + " млрд ₽";
+    if (amount >= 1e6) return (amount / 1e6).toFixed(1) + " млн ₽";
+    return amount.toLocaleString('ru-RU') + " ₽";
+  }
+
+  function updateBalanceUI() {
+    const valStr = balance.toLocaleString('ru-RU');
+    document.getElementById('balance-money').innerText = valStr;
+    const caseScreenBal = document.getElementById('case-screen-balance');
+    if (caseScreenBal) caseScreenBal.innerText = valStr;
+  }
+
+  function updateInventoryUI() {
+    document.getElementById('inv-badge').innerText = inventory.length;
+    document.getElementById('inv-count').innerText = inventory.length;
+    const invGrid = document.getElementById('inventory-grid');
+    invGrid.innerHTML = '';
+    
+    inventory.forEach((item, index) => {
+      const tierData = RARITY[item.tier || 'rare'];
+      const card = document.createElement('div');
+      card.className = 'drop-card';
+      card.style.setProperty('--tier-color', tierData.color);
+      card.style.setProperty('--tier-glow', tierData.glow);
+      card.onclick = () => inspectItem(item);
+      card.innerHTML = `
+        <div class="drop-name">${item.name}</div>
+        <div class="drop-img-box"><img src="${item.img}"></div>
+        <div class="drop-cost">${formatMoney(item.price)}</div>
+        <div style="font-size:7.5px; color:#ef4444; margin-top:2px; font-weight:800; cursor:pointer;" onclick="event.stopPropagation(); sellItem(${index});">[ПРОДАТЬ]</div>
+      `;
+      invGrid.appendChild(card);
+    });
+  }
+
+  function sellItem(index) {
+    balance += inventory[index].price;
+    inventory.splice(index, 1);
+    updateBalanceUI();
+    updateInventoryUI();
+    saveGameData();
+  }
+
+  function sellAllItems() {
+    if (!inventory.length) return;
+    balance += inventory.reduce((sum, item) => sum + item.price, 0);
+    inventory = [];
+    updateBalanceUI();
+    updateInventoryUI();
+    saveGameData();
+  }
+
+  function updateCaseHeaderPrice() {
+    if (!activeCase) return;
+    let totalPrice = activeCase.price * currentMultiplier;
+    document.getElementById('case-title-price').innerText = `Цена - ${formatMoney(totalPrice)}`;
+  }
+
+  function setMultiplier(mult, btnEl) {
+    if (isSpinning) return;
+    currentMultiplier = mult;
+    document.querySelectorAll('.multi-btn').forEach(b => b.classList.remove('active'));
+    btnEl.classList.add('active');
+    updateCaseHeaderPrice();
+  }
+
+  function openCaseView(caseKey) {
+    activeCase = DATABASE[caseKey] || DATABASE.major;
+    currentMultiplier = 1;
+    const multiBtns = document.querySelectorAll('.multi-btn');
+    multiBtns.forEach((b, idx) => {
+      if (idx === 0) b.classList.add('active');
+      else b.classList.remove('active');
+    });
+
+    updateCaseHeaderPrice();
+    updateBalanceUI();
+    document.getElementById('case-screen').style.display = 'flex';
+    
+    const container = document.getElementById('case-items-container');
+    container.innerHTML = '';
+    activeCase.items.forEach(item => {
+      const tierData = RARITY[item.tier || 'rare'];
+      const card = document.createElement('div');
+      card.className = 'drop-card';
+      card.style.setProperty('--tier-color', tierData.color);
+      card.style.setProperty('--tier-glow', tierData.glow);
+      card.onclick = () => inspectItem(item);
+      card.innerHTML = `
+        <div class="drop-name">${item.name}</div>
+        <div class="drop-img-box"><img src="${item.img}"></div>
+        <div class="drop-cost">${formatMoney(item.price)}</div>
+      `;
+      container.appendChild(card);
+    });
+
+    prepareRoulette();
+  }
+
+  function closeCaseView() {
+    if (isSpinning) return;
+    document.getElementById('case-screen').style.display = 'none';
+  }
+
+  const track = document.getElementById('roulette-track');
+  const ITEM_WIDTH = 110;
+
+  function prepareRoulette() {
+    track.innerHTML = '';
+    track.style.transform = 'translateX(0px)';
+
+    for (let i = 0; i < 70; i++) {
+      const randomItem = activeCase.items[Math.floor(Math.random() * activeCase.items.length)];
+      const tierData = RARITY[randomItem.tier || 'rare'];
+      const itemEl = document.createElement('div');
+      itemEl.className = 'roulette-item';
+      itemEl.style.setProperty('--tier-color', tierData.color);
+      itemEl.innerHTML = `
+        <img src="${randomItem.img}">
+        <div class="roulette-item-title">${randomItem.name}</div>
+      `;
+      track.appendChild(itemEl);
+    }
+  }
+
+  function getWeightedRandomItem(items) {
+    let rand = Math.random() * 100;
+    let filtered;
+    
+    if (rand < 75) {
+      filtered = items.filter(i => i.tier === 'rare');
+    } else if (rand < 93) {
+      filtered = items.filter(i => i.tier === 'epic');
+    } else if (rand < 99) {
+      filtered = items.filter(i => i.tier === 'legendary');
+    } else {
+      filtered = items.filter(i => i.tier === 'mythic');
+    }
+
+    if (!filtered || filtered.length === 0) filtered = items.filter(i => i.tier === 'rare');
+    if (!filtered || filtered.length === 0) filtered = items;
+    return filtered[Math.floor(Math.random() * filtered.length)];
+  }
+
+  let rouletteAnimId = null;
+
+  function spinCase() {
+    if (isSpinning) return;
+    let totalCost = activeCase.price * currentMultiplier;
+    
+    if (balance < totalCost) {
+      showToast("Недостаточно рублей на балансе!");
+      return;
+    }
+
+    balance -= totalCost;
+    updateBalanceUI();
+    addXP((activeCase.xp || 50) * currentMultiplier);
+    reportTaskProgress('cases', currentMultiplier);
+    saveGameData();
+
+    isSpinning = true;
+    document.getElementById('roll-button').disabled = true;
+
+    if (rouletteAnimId) cancelAnimationFrame(rouletteAnimId);
+    track.style.transform = 'translateX(0px)';
+    
+    const winningIndex = 48 + Math.floor(Math.random() * 8);
+    
+    pendingWonItems = [];
+    for(let m = 0; m < currentMultiplier; m++) {
+      pendingWonItems.push(getWeightedRandomItem(activeCase.items));
+    }
+
+    currentWonItem = pendingWonItems[0];
+    const tierData = RARITY[currentWonItem.tier || 'rare'];
+    
+    const rouletteItems = track.children;
+    const targetNode = rouletteItems[winningIndex];
+    targetNode.style.setProperty('--tier-color', tierData.color);
+    targetNode.querySelector('img').src = currentWonItem.img;
+    targetNode.querySelector('.roulette-item-title').innerText = currentWonItem.name;
+
+    const containerWidth = document.querySelector('.roulette-container').offsetWidth;
+    const targetOffset = (winningIndex * ITEM_WIDTH) - (containerWidth / 2) + (ITEM_WIDTH / 2) + (Math.random() * 20 - 10);
+
+    let startTime = null;
+    let duration = 3800;
+    let lastPlayedIndex = 0;
+
+    function animateRoulette(currentTime) {
+      if (!startTime) startTime = currentTime;
+      let elapsed = currentTime - startTime;
+      let progress = Math.min(elapsed / duration, 1);
+
+      let easeProgress = 1 - Math.pow(1 - progress, 3);
+      let currentX = easeProgress * targetOffset;
+
+      track.style.transform = `translateX(-${currentX}px)`;
+
+      let currentIndex = Math.floor(currentX / ITEM_WIDTH);
+      if (currentIndex > lastPlayedIndex && progress < 0.96) {
+        playTickSound();
+        if ('vibrate' in navigator) navigator.vibrate(5);
+        lastPlayedIndex = currentIndex;
+      }
+
+      if (progress < 1) {
+        rouletteAnimId = requestAnimationFrame(animateRoulette);
+      } else {
+        isSpinning = false;
+        document.getElementById('roll-button').disabled = false;
+        showNextPendingWinner();
+      }
+    }
+
+    rouletteAnimId = requestAnimationFrame(animateRoulette);
+  }
+
+  function showNextPendingWinner() {
+    if (pendingWonItems.length > 0) {
+      currentWonItem = pendingWonItems.shift();
+      showWinner(currentWonItem);
+    }
+  }
+
+  let clickPower = 10;
+  function tapCoin(e) {
+    balance += clickPower;
+    updateBalanceUI();
+    reportTaskProgress('clicks', 1);
+    saveGameData();
+
+    const rect = e.target.getBoundingClientRect();
+    const x = e.clientX - rect.left;
+    const y = e.clientY - rect.top;
+
+    const floatEl = document.createElement('div');
+    floatEl.innerText = `+${clickPower} ₽`;
+    floatEl.style.position = 'absolute';
+    floatEl.style.left = `${x}px`;
+    floatEl.style.top = `${y}px`;
+    floatEl.style.color = 'var(--gold-primary)';
+    floatEl.style.fontWeight = '900';
+    floatEl.style.fontSize = '16px';
+    floatEl.style.textShadow = '0 0 12px rgba(255,215,0,0.7)';
+    floatEl.style.pointerEvents = 'none';
+    floatEl.style.transition = 'transform 0.6s ease-out, opacity 0.6s ease-out';
+    e.target.parentElement.appendChild(floatEl);
+
+    setTimeout(() => {
+      floatEl.style.transform = 'translateY(-50px)';
+      floatEl.style.opacity = '0';
+    }, 20);
+    setTimeout(() => floatEl.remove(), 600);
+  }
+
+  let selectedUpgradeItem = null;
+  let selectedTargetItem = null;
+  let currentUpgradePercent = 0;
+  let isUpgrading = false;
+
+  function switchGameTab(tabName, btnEl) {
+    document.querySelectorAll('.game-tab-btn').forEach(b => b.classList.remove('active'));
+    document.querySelectorAll('.game-sub-view').forEach(v => v.classList.remove('active'));
+    btnEl.classList.add('active');
+    document.getElementById('tab-' + tabName).classList.add('active');
+  }
+
+  function openInventoryPicker() {
+    if (!inventory.length) {
+      showToast("Ваш инвентарь пуст!");
+      return;
+    }
+    const grid = document.getElementById('picker-items-grid');
+    grid.innerHTML = '';
+    
+    inventory.forEach((item, index) => {
+      const tierData = RARITY[item.tier || 'rare'];
+      const card = document.createElement('div');
+      card.className = 'drop-card';
+      card.style.setProperty('--tier-color', tierData.color);
+      card.style.setProperty('--tier-glow', tierData.glow);
+      card.onclick = () => selectSourceItem(item);
+      card.innerHTML = `
+        <div class="drop-name">${item.name}</div>
+        <div class="drop-img-box"><img src="${item.img}"></div>
+        <div class="drop-cost">${formatMoney(item.price)}</div>
+      `;
+      grid.appendChild(card);
+    });
+
+    document.getElementById('inventory-picker-modal').style.display = 'flex';
+  }
+
+  function closeInventoryPicker() {
+    document.getElementById('inventory-picker-modal').style.display = 'none';
+  }
+
+  function selectSourceItem(item) {
+    selectedUpgradeItem = item;
+    selectedTargetItem = null;
+    closeInventoryPicker();
+
+    document.getElementById('src-name').innerText = item.name;
+    const imgEl = document.getElementById('src-img');
+    imgEl.src = item.img;
+    imgEl.style.display = 'block';
+    document.getElementById('src-price').innerText = formatMoney(item.price);
+
+    document.getElementById('tgt-name').innerText = 'Цель (из сетки)';
+    const tgtImg = document.getElementById('tgt-img');
+    tgtImg.style.display = 'none';
+    document.getElementById('tgt-price').innerText = '';
+
+    currentUpgradePercent = 0;
+    updateCircleUI(0);
+    document.getElementById('exec-upgrade-btn').disabled = true;
+
+    generateUpgradeTargets(item);
+  }
+
+  function generateUpgradeTargets(sourceItem) {
+    let allItemsFlat = [];
+    for (let k in DATABASE) {
+      DATABASE[k].items.forEach(it => {
+        if (!allItemsFlat.some(x => x.name === it.name)) {
+          allItemsFlat.push(it);
+        }
+      });
+    }
+    allItemsFlat.sort((a,b) => a.price - b.price);
+
+    let maxAllowedPrice = sourceItem.price * 2.0;
+    let suitableItems = allItemsFlat.filter(it => it.price > sourceItem.price && it.price <= maxAllowedPrice);
+    
+    if (suitableItems.length === 0) suitableItems = allItemsFlat.filter(it => it.price > sourceItem.price).slice(0, 1);
+    if (suitableItems.length === 0) suitableItems = [sourceItem];
+
+    let targets = [];
+    for (let i = 0; i < 8; i++) {
+      let idx = Math.floor((i / 7) * (suitableItems.length - 1));
+      targets.push(suitableItems[idx]);
+    }
+
+    renderUpgradeTargetsGrid(targets);
+  }
+
+  function renderUpgradeTargetsGrid(targets) {
+    const grid = document.getElementById('upgrade-targets-grid');
+    grid.innerHTML = '';
+
+    targets.forEach((item) => {
+      const tierData = RARITY[item.tier || 'rare'];
+      const card = document.createElement('div');
+      card.className = 'upgrade-target-grid-item';
+      card.style.setProperty('--tier-color', tierData.color);
+      card.style.setProperty('--tier-glow', tierData.glow);
+      card.onclick = () => selectTargetItem(item, card);
+      card.innerHTML = `
+        <div class="drop-name" style="font-size:7.5px;">${item.name}</div>
+        <div class="drop-img-box" style="height:38px;"><img src="${item.img}"></div>
+        <div class="drop-cost" style="font-size:7.5px;">${formatMoney(item.price)}</div>
+      `;
+      grid.appendChild(card);
+    });
+  }
+
+  function selectTargetItem(item, cardEl) {
+    if (!selectedUpgradeItem || isUpgrading) return;
+
+    document.querySelectorAll('.upgrade-target-grid-item').forEach(c => c.classList.remove('selected'));
+    if (cardEl) cardEl.classList.add('selected');
+    selectedTargetItem = item;
+
+    document.getElementById('tgt-name').innerText = item.name;
+    const tgtImg = document.getElementById('tgt-img');
+    tgtImg.src = item.img;
+    tgtImg.style.display = 'block';
+    document.getElementById('tgt-price').innerText = formatMoney(item.price);
+
+    let ratio = item.price / selectedUpgradeItem.price;
+    let calculatedPct = Math.round(75 - (ratio - 1) * 60);
+    calculatedPct = Math.max(15, Math.min(75, calculatedPct));
+
+    currentUpgradePercent = calculatedPct;
+    updateCircleUI(calculatedPct);
+
+    document.getElementById('exec-upgrade-btn').disabled = false;
+  }
+
+  function updateCircleUI(pct) {
+    document.getElementById('upgrade-chance-text').innerText = pct + '%';
+    const circle = document.getElementById('svg-progress-circle');
+    const radius = 56;
+    const circumference = 2 * Math.PI * radius;
+    const offset = circumference - (pct / 100) * circumference;
+    circle.style.strokeDashoffset = offset;
+  }
+
+  function resetUpgrade() {
+    if (isUpgrading) return;
+    selectedUpgradeItem = null;
+    selectedTargetItem = null;
+    document.getElementById('src-name').innerText = 'Выберите предмет';
+    document.getElementById('src-img').style.display = 'none';
+    document.getElementById('src-price').innerText = '';
+
+    document.getElementById('tgt-name').innerText = 'Цель (из сетки)';
+    document.getElementById('tgt-img').style.display = 'none';
+    document.getElementById('tgt-price').innerText = '';
+
+    currentUpgradePercent = 0;
+    updateCircleUI(0);
+
+    document.getElementById('upgrade-targets-grid').innerHTML = `<div style="grid-column: span 4; text-align: center; font-size: 10.5px; color: var(--text-dim); padding: 30px;">Сначала выберите свой предмет слева</div>`;
+    document.getElementById('exec-upgrade-btn').disabled = true;
+    document.getElementById('upgrade-needle').style.transform = `translateX(-50%) rotate(0deg)`;
+  }
+
+  function executeUpgrade() {
+    if (!selectedUpgradeItem || !selectedTargetItem || isUpgrading || currentUpgradePercent === 0) return;
+
+    reportTaskProgress('upgrades', 1);
+    isUpgrading = true;
+    document.getElementById('exec-upgrade-btn').disabled = true;
+
+    let roll = Math.random() * 100;
+    let isSuccess = roll <= currentUpgradePercent;
+
+    let targetAngle;
+    let fullSpins = 5 + Math.floor(Math.random() * 3);
+
+    if (isSuccess) {
+      let maxDeg = currentUpgradePercent * 3.6 - 6;
+      let randomZoneDeg = Math.max(5, Math.random() * maxDeg);
+      targetAngle = (fullSpins * 360) + randomZoneDeg;
+    } else {
+      let minDeg = currentUpgradePercent * 3.6 + 10;
+      let maxDeg = 350;
+      let randomZoneDeg = minDeg + Math.random() * (maxDeg - minDeg);
+      targetAngle = (fullSpins * 360) + randomZoneDeg;
+    }
+
+    const needle = document.getElementById('upgrade-needle');
+    
+    let startTime = null;
+    let duration = 2400;
+    let lastTickAngle = 0;
+
+    function animateNeedle(currentTime) {
+      if (!startTime) startTime = currentTime;
+      let elapsed = currentTime - startTime;
+      let progress = Math.min(elapsed / duration, 1);
+
+      let easeProgress = 1 - Math.pow(1 - progress, 3);
+      let currentAngle = easeProgress * targetAngle;
+
+      needle.style.transform = `translateX(-50%) rotate(${currentAngle}deg)`;
+
+      if (currentAngle - lastTickAngle > 18 && progress < 0.95) {
+        playTickSound();
+        if ('vibrate' in navigator) navigator.vibrate(4);
+        lastTickAngle = currentAngle;
+      }
+
+      if (progress < 1) {
+        requestAnimationFrame(animateNeedle);
+      } else {
+        let idx = inventory.indexOf(selectedUpgradeItem);
+        if (idx > -1) inventory.splice(idx, 1);
+
+        if (isSuccess) {
+          currentWonItem = selectedTargetItem;
+          showWinner(selectedTargetItem);
+          showToast("Успех! Предмет успешно повышен!");
+        } else {
+          updateInventoryUI();
+          showToast("Неудача! Предмет сгорел при апгрейде.");
+        }
+
+        isUpgrading = false;
+        resetUpgrade();
+        saveGameData();
+      }
+    }
+
+    requestAnimationFrame(animateNeedle);
+  }
+
+  const cardWrap = document.getElementById('card-3d');
+  const modalBox = document.getElementById('modal-box-tier');
+
+  function updateParallax(xPercent, yPercent) {
+    const rotateX = (yPercent - 0.5) * -34;
+    const rotateY = (xPercent - 0.5) * 34;
+    cardWrap.style.transform = `rotateX(${rotateX}deg) rotateY(${rotateY}deg)`;
+    modalBox.style.setProperty('--mouse-x', `${xPercent * 100}%`);
+    modalBox.style.setProperty('--mouse-y', `${yPercent * 100}%`);
+  }
+
+  window.addEventListener('mousemove', (e) => {
+    if (document.getElementById('win-modal').style.display !== 'flex') return;
+    updateParallax(e.clientX / window.innerWidth, e.clientY / window.innerHeight);
+  });
+
+  const canvas = document.getElementById('confetti-canvas');
+  const ctx = canvas.getContext('2d');
+  let particles = [];
+
+  function launchConfetti(color) {
+    if (confettiAnimationId) cancelAnimationFrame(confettiAnimationId);
+    canvas.width = canvas.offsetWidth;
+    canvas.height = canvas.offsetHeight;
+    particles = [];
+    for (let i = 0; i < 90; i++) {
+      particles.push({
+        x: canvas.width / 2,
+        y: canvas.height / 2,
+        vx: (Math.random() - 0.5) * 17,
+        vy: (Math.random() - 0.7) * 19,
+        size: Math.random() * 6.5 + 3,
+        color: Math.random() > 0.3 ? color : '#ffd700',
+        alpha: 1,
+        decay: Math.random() * 0.014 + 0.009
+      });
+    }
+    confettiAnimationId = requestAnimationFrame(renderConfetti);
+  }
+
+  function renderConfetti() {
+    ctx.clearRect(0, 0, canvas.width, canvas.height);
+    particles.forEach((p, idx) => {
+      p.x += p.vx;
+      p.y += p.vy;
+      p.vy += 0.38;
+      p.alpha -= p.decay;
+
+      ctx.fillStyle = p.color;
+      ctx.globalAlpha = Math.max(p.alpha, 0);
+      ctx.beginPath();
+      ctx.arc(p.x, p.y, p.size, 0, Math.PI * 2);
+      ctx.fill();
+
+      if (p.alpha <= 0) particles.splice(idx, 1);
+    });
+
+    if (particles.length > 0) {
+      confettiAnimationId = requestAnimationFrame(renderConfetti);
+    } else {
+      confettiAnimationId = null;
+    }
+  }
+
+  function showWinner(item) {
+    const tierData = RARITY[item.tier || 'rare'];
+    const modalWrap = document.getElementById('win-modal');
+    
+    document.getElementById('win-tier').innerText = `${tierData.name} ITEM`;
+    document.getElementById('win-name').innerText = item.name;
+    document.getElementById('win-img').src = item.img;
+    document.getElementById('win-price').innerText = `${formatMoney(item.price)}`;
+    document.getElementById('win-sell-price').innerText = item.price.toLocaleString('ru-RU');
+
+    modalBox.style.setProperty('--tier-color', tierData.color);
+    modalBox.style.setProperty('--tier-glow', tierData.glow);
+
+    modalWrap.style.display = 'flex';
+    cardWrap.style.transform = 'rotateX(0deg) rotateY(0deg)';
+
+    if (['epic', 'legendary', 'mythic'].includes(item.tier)) {
+      launchConfetti(tierData.color);
+    }
+  }
+
+  function sellWonItemDirectly() {
+    if (currentWonItem) {
+      balance += currentWonItem.price;
+      updateBalanceUI();
+      currentWonItem = null;
+    }
+    if (confettiAnimationId) {
+      cancelAnimationFrame(confettiAnimationId);
+      confettiAnimationId = null;
+    }
+    ctx.clearRect(0, 0, canvas.width, canvas.height);
+    document.getElementById('win-modal').style.display = 'none';
+    saveGameData();
+
+    if (pendingWonItems.length > 0) {
+      showNextPendingWinner();
+    }
+  }
+
+  function claimPrize(e) {
+    if (e) {
+      e.preventDefault();
+      e.stopPropagation();
+    }
+    
+    if (confettiAnimationId) {
+      cancelAnimationFrame(confettiAnimationId);
+      confettiAnimationId = null;
+    }
+    ctx.clearRect(0, 0, canvas.width, canvas.height);
+
+    if (currentWonItem) {
+      inventory.push(currentWonItem);
+      currentWonItem = null;
+      updateInventoryUI();
+    }
+    
+    document.getElementById('win-modal').style.display = 'none';
+    saveGameData();
+
+    if (pendingWonItems.length > 0) {
+      showNextPendingWinner();
+    }
+  }
+
+  function switchTab(tab) {
+    if (isSpinning || isUpgrading) return;
+    document.querySelectorAll('.nav-item').forEach(el => el.classList.remove('active'));
+    document.getElementById('inventory-screen').style.display = 'none';
+    document.getElementById('case-screen').style.display = 'none';
+    document.getElementById('cases-view').classList.remove('active-view');
+    document.getElementById('games-view').classList.remove('active-view');
+    document.getElementById('tasks-view').classList.remove('active-view');
+    closeInventoryPicker();
+    closeChancesModal();
+    closeNameModal();
+
+    if (tab === 'inventory') {
+      document.getElementById('nav-inv').classList.add('active');
+      document.getElementById('inventory-screen').style.display = 'flex';
+      updateInventoryUI();
+    } else if (tab === 'cases') {
+      document.getElementById('nav-cases').classList.add('active');
+      document.getElementById('cases-view').classList.add('active-view');
+    } else if (tab === 'games') {
+      document.getElementById('nav-games').classList.add('active');
+      document.getElementById('games-view').classList.add('active-view');
+    } else if (tab === 'tasks') {
+      document.getElementById('nav-tasks').classList.add('active');
+      document.getElementById('tasks-view').classList.add('active-view');
+      renderTasksUI();
+    }
+  }
+
+  loadGameData();
+
+  updatePlayerNameUI();
+  updateBalanceUI();
+  updateXPUI();
+  initTasks();
+</script>
+</body>
+</html>

@@ -22,13 +22,23 @@ jobs:
 
     - name: 4. Создание проекта Cordova и сборка APK
       run: |
-        # Создаем проект в папке mygamefolder
+        # Проверим, как точно называется файл в корне
+        ls -la
+        
+        # Создаем проект Cordova
         cordova create mygamefolder com.simulator.game CaseSimulator
         
-        # Копируем index.html из корня репозитория прямо в папку www нового проекта
-        cp index.html mygamefolder/www/index.html
+        # Копируем файл с учетом возможных вариантов названия
+        if [ -f "index.html" ]; then
+          cp index.html mygamefolder/www/index.html
+        elif [ -f "Index.html" ]; then
+          cp Index.html mygamefolder/www/index.html
+        else
+          echo "Файл игры не найден!"
+          exit 1
+        fi
         
-        # Переходим в папку проекта, добавляем платформу и собираем APK
+        # Переходим в папку, добавляем платформу и собираем
         cd mygamefolder
         cordova platform add android
         cordova build android --debug

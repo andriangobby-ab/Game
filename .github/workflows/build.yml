@@ -22,13 +22,16 @@ jobs:
 
     - name: 4. Создание проекта Cordova и сборка APK
       run: |
-        cordova create . com.simulator.game CaseSimulator
+        # Создаем проект в папке appdir
+        cordova create appdir com.simulator.game CaseSimulator
+        cd appdir
         cordova platform add android
-        cp index.html www/index.html
+        # Копируем index.html из корня репозитория в папку www проекта
+        cp ../index.html www/index.html
         cordova build android --debug
 
     - name: 5. Сохранение готового APK в артефакты
       uses: actions/upload-artifact@v4
       with:
         name: CaseSimulator-APK
-        path: platforms/android/app/build/outputs/apk/debug/app-debug.apk
+        path: appdir/platforms/android/app/build/outputs/apk/debug/app-debug.apk

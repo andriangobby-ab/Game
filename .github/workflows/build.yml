@@ -9,7 +9,7 @@ jobs:
     runs-on: ubuntu-latest
 
     steps:
-    - name: 1. Скачивание кода игры
+    - name: 1. Скачивание кода и картинок игры
       uses: actions/checkout@v4
 
     - name: 2. Настройка Java 21
@@ -30,11 +30,8 @@ jobs:
       run: |
         cordova create mygamefolder com.simulator.game CaseSimulator
         
-        if [ -f "index.html" ]; then
-          cp index.html mygamefolder/www/index.html
-        elif [ -f "Index.html" ]; then
-          cp Index.html mygamefolder/www/index.html
-        fi
+        # Копируем вообще ВСЕ файлы (index.html и все .jpg картинки) в папку www проекта
+        cp -r * mygamefolder/www/ || true
         
         cd mygamefolder
         cordova platform add android

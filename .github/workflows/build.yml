@@ -26,26 +26,41 @@ jobs:
     - name: 4. Установка Apache Cordova
       run: npm install -g cordova
 
-    - name: 5. Создание проекта Cordova и сборка APK
+    - name: 5. Сборка APK через Cordova вручную
       run: |
-        cordova create mygamefolder com.simulator.game CaseSimulator
+        # Создаем структуру Cordova руками, избегая ошибок утилиты create
+        cordova telemetry off
         
-        # Копируем файлы по абсолютному пути из корня репозитория
-        cp ${{ github.workspace }}/index.html mygamefolder/www/
-        cp ${{ github.workspace }}/*.jpg mygamefolder/www/ || true
+        # Создаем проект через cordova напрямую в корне
+        cordova platform add android@13 || true
         
-        cd mygamefolder
+        # Находим и переносим все файлы игры в папку www
+        mkdir -p www
+        find . -maxdepth 1 -name "*.html" -o -name "*.jpg" -o -name "*.png" -exec cp {} www/ \;
         
-        # Безопасно отключаем заставку
-        sed -i '/<\/widget>/i \ \ <preference name="SplashScreen" value="none" />' config.xml
-        sed -i '/<\/widget>/i \ \ <preference name="AutoHideSplashScreen" value="true" />' config.xml
+        # Проверим, скопировался ли index.html
+        ls -la www/
         
-        cordova platform add android
+        # Инициализируем минимальный config.xml если его нет
+        if [ ! -f "config.xml" ]; then
+          cat <<EOF > config.xml
+          <widget id="com.simulator.game" version="1.0.0" xmlns="http://www.w3.org/ns/widgets">
+              <name>CaseSimulator</name>
+              <description>Case Simulator Game</description>
+              <author email="dev@example.com">Author</author>
+              <content src="index.html" />
+              <access origin="*" />
+              <preference name="SplashScreen" value="none" />
+              <preference name="AutoHideSplashScreen" value="true" />
+          </widget>
+EOF
+        fi
+
         cordova build android --debug
 
     - name: 6. Сохранение готового APK в артефакты
       uses: actions/upload-artifact@v4
       with:
         name: CaseSimulator-APK
-        path: mygamefolder/platforms/android/app/build/outputs/apk/debug/app-debug.apk
+        path: platforms/android/app/build/outputs/apk/debug/app-debug.apk
         

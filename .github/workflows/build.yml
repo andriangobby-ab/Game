@@ -22,17 +22,14 @@ jobs:
 
     - name: 4. Создание проекта Cordova и сборка APK
       run: |
-        # Сохраняем index.html во временную папку
-        mkdir temp_game
-        cp index.html temp_game/index.html
+        # Создаем проект в папке mygamefolder
+        cordova create mygamefolder com.simulator.game CaseSimulator
         
-        # Создаем проект Cordova прямо в корне (предварительно удалив системные файлы github оттуда, кроме workflow)
-        rm -rf index.html README.md
-        cordova create . com.simulator.game CaseSimulator
+        # Копируем index.html из корня репозитория прямо в папку www нового проекта
+        cp index.html mygamefolder/www/index.html
         
-        # Возвращаем index.html на место в папку www
-        cp temp_game/index.html www/index.html
-        
+        # Переходим в папку проекта, добавляем платформу и собираем APK
+        cd mygamefolder
         cordova platform add android
         cordova build android --debug
 
@@ -40,4 +37,5 @@ jobs:
       uses: actions/upload-artifact@v4
       with:
         name: CaseSimulator-APK
-        path: platforms/android/app/build/outputs/apk/debug/app-debug.apk
+        path: mygamefolder/platforms/android/app/build/outputs/apk/debug/app-debug.apk
+        

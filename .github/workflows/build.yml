@@ -26,41 +26,18 @@ jobs:
     - name: 4. Установка Apache Cordova
       run: npm install -g cordova
 
-    - name: 5. Сборка APK через Cordova вручную
+    - name: 5. Сборка проекта
       run: |
-        # Создаем структуру Cordova руками, избегая ошибок утилиты create
-        cordova telemetry off
-        
-        # Создаем проект через cordova напрямую в корне
-        cordova platform add android@13 || true
-        
-        # Находим и переносим все файлы игры в папку www
-        mkdir -p www
-        find . -maxdepth 1 -name "*.html" -o -name "*.jpg" -o -name "*.png" -exec cp {} www/ \;
-        
-        # Проверим, скопировался ли index.html
-        ls -la www/
-        
-        # Инициализируем минимальный config.xml если его нет
-        if [ ! -f "config.xml" ]; then
-          cat <<EOF > config.xml
-          <widget id="com.simulator.game" version="1.0.0" xmlns="http://www.w3.org/ns/widgets">
-              <name>CaseSimulator</name>
-              <description>Case Simulator Game</description>
-              <author email="dev@example.com">Author</author>
-              <content src="index.html" />
-              <access origin="*" />
-              <preference name="SplashScreen" value="none" />
-              <preference name="AutoHideSplashScreen" value="true" />
-          </widget>
-EOF
-        fi
-
+        cordova create mygame com.simulator.game CaseSimulator
+        cp index.html mygame/www/index.html
+        cp *.jpg mygame/www/ || true
+        cd mygame
+        cordova platform add android
         cordova build android --debug
 
-    - name: 6. Сохранение готового APK в артефакты
+    - name: 6. Сохранение APK
       uses: actions/upload-artifact@v4
       with:
         name: CaseSimulator-APK
-        path: platforms/android/app/build/outputs/apk/debug/app-debug.apk
+        path: mygame/platforms/android/app/build/outputs/apk/debug/app-debug.apk
         

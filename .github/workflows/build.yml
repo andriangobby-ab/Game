@@ -30,13 +30,13 @@ jobs:
       run: |
         cordova create mygamefolder com.simulator.game CaseSimulator
         
-        # Аккуратно копируем index.html и все картинки .jpg в папку www проекта
-        cp index.html mygamefolder/www/
-        cp *.jpg mygamefolder/www/ || true
+        # Копируем файлы по абсолютному пути из корня репозитория
+        cp ${{ github.workspace }}/index.html mygamefolder/www/
+        cp ${{ github.workspace }}/*.jpg mygamefolder/www/ || true
         
         cd mygamefolder
         
-        # Безопасно добавляем настройки отключения заставки внутрь тега widget в config.xml
+        # Безопасно отключаем заставку
         sed -i '/<\/widget>/i \ \ <preference name="SplashScreen" value="none" />' config.xml
         sed -i '/<\/widget>/i \ \ <preference name="AutoHideSplashScreen" value="true" />' config.xml
         
